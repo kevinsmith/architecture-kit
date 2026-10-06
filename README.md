@@ -14,6 +14,18 @@ Agents make code cheaper to produce. They do not automatically make the resultin
 
 The kit exists to constrain changes and make architectural guarantees verifiable.
 
+## The bitter lesson
+
+Rich Sutton's [bitter lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) is that hand-encoding human knowledge about how to solve a problem helps at first, then loses to general methods that scale with computation. Guidance for coding agents carries the same risk: instructions that tell a model how to think get outgrown, and can limit a better model to its designer's understanding.
+
+The kit is built to stay on the durable side of that line:
+
+- **Its rules state properties of the system.** One owner per dataset, an acyclic module graph, and external effects only after commit are decisions about the system and facts about the world. A more capable agent still needs them written down, because they are agreements among independent sessions and with the people who review the work.
+- **Its checks scale with capability.** The bitter lesson favors search guided by a reliable signal. Checkers, real-infrastructure tests, and violation baselines are that signal, and a stronger agent gets more out of them.
+- **Its rationales outlast model limits.** Where a rule helps today's agents, for example by bounding what they must consider for a change, its rationale also gives a reason that holds regardless, such as contained change or independent review.
+
+The most exposed parts are procedural: the per-change steps in `kit/AGENTS.md`, the placement and evidence-reporting procedures, and language-profile heuristics. They are defaults that allow reasoned alternatives, and they should stay short. Whether each one still improves agent outcomes is an empirical question this repository does not yet measure. Guidance that stops helping should be removed.
+
 ## Design standard
 
 Keep a rule only when it protects correctness, limits coupling or change scope, coordinates ownership, or enables reliable verification. Rules justified solely by human developer convenience do not belong in the kit.

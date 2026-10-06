@@ -67,7 +67,7 @@ No other dependency on the codebase is permitted. External libraries are governe
 **Notes:**
 - A language package, crate, process, or deployment unit is not automatically an architectural module.
 
-**Why:** Explicit ownership and an acyclic module graph bound the state and dependencies an agent must consider for a change.
+**Why:** Explicit ownership and an acyclic module graph contain change. Each module can be built, tested, and reviewed with only the modules it depends on, and concurrent work in different modules does not collide. They also bound what an agent must consider for a change.
 
 ## R04 — Strict Domain purity
 
@@ -112,7 +112,7 @@ No other dependency on the codebase is permitted. External libraries are governe
 **Notes:**
 - Assembly may be split into module-specific functions; a container is optional. Language-standard registration, such as a database driver, may occur at the composition/adapter boundary.
 
-**Why:** Explicit assembly exposes the implementation choices and dependency graph an agent must verify.
+**Why:** Explicit assembly keeps every implementation choice and dependency in one place where it can be reviewed and replaced, and keeps behavior from depending on hidden initialization order.
 
 ## R07 — Lifetimes and concurrency
 
