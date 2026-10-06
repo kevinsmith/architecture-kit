@@ -8,7 +8,9 @@ This is the canonical architecture kit, not an application. Optimize for agents 
 
 - `kit/` contains material copied into adopting projects. Keep it self-contained.
 - `kit/docs/architecture/rules.md` is the authoritative core. Language profiles map its rule IDs to idiomatic implementations; checks do not override it.
-- `enforcement/` contains checker acceptance criteria.
-- `examples/` contains the shared reference scenario.
+- `enforcement/` contains language-specific checker assets and their support status.
+- `examples/` contains the shared reference scenario and verification fixtures.
 
 Keep this maintenance file separate from `kit/AGENTS.md`. Do not invent application paths or build commands. When changing a rule, check the profiles, companions, reference scenario, enforcement claims, and README dependency diagram (`docs/modular-monolith-dependency-diagram.svg`) for consistency. Distinguish proposed mechanisms from verified checks.
+
+Run `python3 scripts/verify.py` before proposing a commit. It uses local Go or the pinned Docker toolchain and validates documentation, Go checks, and installation. `--docker` forces Docker; `--local` is used by CI.

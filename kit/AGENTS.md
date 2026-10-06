@@ -25,6 +25,7 @@ Read only the relevant companions:
 - `docs/architecture/reporting.md` — cross-module reporting and analytical data.
 - `docs/architecture/verification.md` — setting up or changing checks.
 - Selected profiles listed in `docs/architecture/project.md` — language mappings and verification limits.
+- `docs/architecture/go-enforcement.md` — installing and configuring the supplied Go checker.
 
 Do not restructure unrelated code, silently broaden a deviation, or regenerate a baseline to accept new violations (R16–R17).
 

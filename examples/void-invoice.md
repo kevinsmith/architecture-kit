@@ -1,6 +1,6 @@
 # Reference scenario: void an invoice
 
-This is a verification specification for [R01–R17](../kit/docs/architecture/rules.md). The business policy below exercises architectural guarantees; it is not part of the universal architecture.
+This is a verification specification for [R01–R17](../kit/docs/architecture/rules.md). The [Go fixture](go/fixture.md) supplies executable evidence with documented limits. The business policy below exercises architectural guarantees; it is not part of the universal architecture.
 
 ## Ownership and boundaries
 

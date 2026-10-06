@@ -1,0 +1,16 @@
+{
+  "module": "<go.mod module path>",
+  "packages": [],
+  "files": {},
+  "depends_on": {},
+  "storage_imports": ["database/sql"],
+  "datasets": {},
+  "transaction_functions": [],
+  "external_effects": [],
+  "pure_imports": ["cmp", "errors", "fmt", "maps", "math", "regexp", "slices", "sort", "strconv", "strings", "time", "unicode", "unicode/utf8"],
+  "forbidden_symbols": {
+    "fmt": ["Print", "Printf", "Println", "Fprint", "Fprintf", "Fprintln", "Scan", "Scanf", "Scanln", "Fscan", "Fscanf", "Fscanln"],
+    "time": ["Now", "Since", "Until", "Sleep", "After", "AfterFunc", "NewTimer", "NewTicker", "Tick", "LoadLocation", "Local"]
+  },
+  "forbid_init": true
+}

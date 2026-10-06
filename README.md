@@ -46,12 +46,12 @@ The diagram shows logical responsibilities, not required folders or runtime call
 
 - [`kit/AGENTS.md`](kit/AGENTS.md) — copyable agent instructions.
 - [`kit/docs/architecture/rules.md`](kit/docs/architecture/rules.md) — authoritative, language-neutral core with stable rule IDs.
-- [`kit/docs/architecture/profiles/`](kit/docs/architecture/profiles/requirements.md) — requirements for language profiles.
+- [`kit/docs/architecture/profiles/`](kit/docs/architecture/profiles/requirements.md) — Go language mapping and validation scope.
 - [`kit/docs/architecture/project.md`](kit/docs/architecture/project.md) — target-project configuration template.
-- [`enforcement/`](enforcement/requirements.md) — checker acceptance criteria.
+- [`enforcement/`](enforcement/requirements.md) — checker assets and explicit support status.
 - [`examples/`](examples/requirements.md) — the shared invoice-voiding scenario and fixture requirements.
 
-This repository contains guidance and a reference scenario specification, not an application.
+See the [support matrix](kit/docs/architecture/profiles/requirements.md) for validation status and implementation coverage. This repository contains verification fixtures, not an application.
 
 ## Adoption
 
@@ -60,13 +60,25 @@ This repository contains guidance and a reference scenario specification, not an
 3. Complete `docs/architecture/project.md`: adopted revision, application roots, language profiles, source/data ownership, execution semantics, verification commands, and deviations. Adjust paths consistently if the project uses a different documentation location.
 4. Follow the [greenfield](kit/docs/architecture/greenfield.md) or [migration](kit/docs/architecture/migration.md) procedure. Install only checks whose support and configuration have been verified for the project. Copied documentation is not installed enforcement.
 
-Examples are optional reference evidence, not code every adopting application must include.
+For Go, follow the self-contained [checker installation guide](kit/docs/architecture/go-enforcement.md). Examples are optional reference evidence, not code every adopting application must include.
 
 The installed guidance is self-contained; repository maintenance files and example sources are not required at runtime. Agents read only the selected language profiles and relevant companions.
 
 ## Updating an installed copy
 
 Record the adopted kit revision before local changes. Compare a new revision against that base, merge changes into the installed guidance, and preserve project configuration and explicit deviations. Re-run affected checks and fixtures before updating the recorded revision. Do not overwrite the target project's instructions or assume it already has this repository's tooling.
+
+## Verify this repository
+
+From the repository root:
+
+```sh
+python3 scripts/verify.py
+```
+
+Requires Python 3.10+ and Git, plus either Go 1.27.1 with race-detector support (including a C toolchain) or Docker. When Go is absent, the command uses the pinned Go Docker image automatically; `--docker` selects it explicitly and `--local` requires local Go. Initial dependency/image downloads need network access.
+
+This checks documentation links and rule references, whitespace, Go formatting, checker fixtures, the real-SQLite scenario with race detection, and an isolated copy/install smoke test. The smoke test builds the copied checker as a standalone command and as a golangci-lint plugin, and confirms that each accepts the reference and rejects unclassified code outside the canonical repository. CI uses the same entry point. Hosted CI results must still be checked after pushing.
 
 ## License
 

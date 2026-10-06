@@ -1,0 +1,12 @@
+# Merge into the application's .golangci.yml. Paths resolve from the application's module root.
+version: "2"
+linters:
+  enable:
+    - archcheck
+  settings:
+    custom:
+      archcheck:
+        type: module
+        description: Architecture kit rules for classification, dependencies, effects, and published surfaces.
+        settings:
+          config: architecture.json

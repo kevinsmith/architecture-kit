@@ -2,6 +2,8 @@
 
 Checks implement the [core specification](../kit/docs/architecture/rules.md); they do not define or override it.
 
+See the [profile support matrix](../kit/docs/architecture/profiles/requirements.md) for implementation status, and the [Go checker](go/development.md) and [SQLite scenario](../examples/go/fixture.md) documentation for coverage.
+
 ## Checker acceptance criteria
 
 - Build on the ecosystem's standard tooling. Use the language's standard static-analysis framework; where the language has none, use the most widely adopted analysis tool in its ecosystem. Run checks inside tools that projects already use when those tools accept plugins. Write custom checks only for what existing tools cannot express, and document why.

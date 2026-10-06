@@ -2,6 +2,12 @@
 
 Profiles map the [core rules](../rules.md) to idiomatic implementations. They are not independent specifications. Read the profiles selected in [project configuration](../project.md); projects using multiple languages must also specify the serialized contracts connecting them.
 
+## Supported profile
+
+| Profile | Validation status |
+|---|---|
+| [Go](go.md) | Executable scenario and partial checker |
+
 ## Profile requirements
 
 Each profile must identify:

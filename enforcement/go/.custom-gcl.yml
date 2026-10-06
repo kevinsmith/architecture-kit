@@ -1,0 +1,8 @@
+# Builds golangci-lint with the archcheck plugin. Run `golangci-lint custom` from this directory.
+version: v2.14.0
+name: golangci-lint-archcheck
+destination: .
+plugins:
+  - module: example.com/architecture/check
+    import: example.com/architecture/check/golangci
+    path: .

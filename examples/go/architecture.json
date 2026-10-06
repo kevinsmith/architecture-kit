@@ -1,0 +1,26 @@
+{
+  "module": "example.com/architecture/invoice",
+  "packages": [
+    {"path": "billing/contracts", "module": "billing", "role": "contract"},
+    {"path": "billing", "module": "billing", "role": "application"},
+    {"path": "billing/domain", "module": "billing", "role": "domain"},
+    {"path": "billing/sqlite", "module": "billing", "role": "infrastructure"},
+    {"path": "access", "module": "access", "role": "application"},
+    {"path": "access/sqlite", "module": "access", "role": "infrastructure"},
+    {"path": "notifications", "module": "notifications", "role": "application"},
+    {"path": "notifications/input", "module": "notifications", "role": "presentation"},
+    {"path": "platform", "module": "shared", "role": "shared-infrastructure"},
+    {"path": "assembly", "module": "composition", "role": "composition"}
+  ],
+  "files": {"access/grant.go": "domain"},
+  "depends_on": {"billing": ["access"], "notifications": ["billing"]},
+  "storage_imports": ["database/sql"],
+  "datasets": {"billing": ["billing_invoices", "billing_outbox"], "access": ["access_grants"]},
+  "transaction_functions": ["example.com/architecture/invoice/billing.Store.Run"],
+  "external_effects": ["example.com/architecture/invoice/billing.Subscriber", "example.com/architecture/invoice/notifications.Mailer"],
+  "pure_imports": ["errors", "time"],
+  "forbidden_symbols": {
+    "time": ["Now", "Since", "Until", "Sleep", "After", "AfterFunc", "NewTimer", "NewTicker", "Tick", "LoadLocation", "Local"]
+  },
+  "forbid_init": true
+}
