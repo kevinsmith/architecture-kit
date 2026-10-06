@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="700" viewBox="0 0 880 700" role="img" aria-labelledby="title desc">
+  <title id="title">Dependencies point inward</title>
+  <desc id="desc">Overview of key source dependencies, not runtime calls. Composition wires all required roles. Inside one module, input adapters depend on Application and its boundary values; I/O adapters depend on Application contracts and Domain; Application depends on pure Domain decisions. No dependency connects the two adapters. Cross-module access uses published contracts, never internals. Shared technical adapters are wired through contracts. This overview does not prescribe folders or show every allowed dependency; core rule R02 is authoritative.</desc>
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #24292f; text-anchor: middle; }
+    .heading { font-size: 24px; font-weight: 650; }
+    .label { font-size: 19px; font-weight: 600; }
+    .note { font-size: 16px; }
+    .small { font-size: 14px; }
+    .box { stroke: #57606a; stroke-width: 1.5; }
+    .arrow { fill: none; stroke: #57606a; stroke-width: 2; marker-end: url(#arrow); }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <polygon points="0,0 10,5 0,10" fill="#57606a"/>
+    </marker>
+  </defs>
+  <rect width="880" height="700" rx="12" fill="#ffffff"/>
+  <text class="heading" x="440" y="38">Dependencies point inward</text>
+  <text class="note" x="440" y="66">A → B means “A depends on B” — not “A calls B at runtime”</text>
+
+  <rect class="box" x="120" y="96" width="640" height="74" rx="10" fill="#f1efe8"/>
+  <text class="label" x="440" y="127">Composition</text>
+  <text class="note" x="440" y="151">Selects implementations and wires all required roles</text>
+
+  <rect x="40" y="216" width="800" height="376" rx="14" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text class="note" x="440" y="248">One module · responsibilities, not required folders</text>
+
+  <path class="arrow" d="M220 170 V276"/>
+  <path class="arrow" d="M660 170 V276"/>
+  <rect class="box" x="70" y="276" width="300" height="80" rx="10" fill="#faece7"/>
+  <text class="label" x="220" y="304">Presentation · input adapters</text>
+  <text class="note" x="220" y="334">HTTP, CLI, messages, UI</text>
+  <rect class="box" x="510" y="276" width="300" height="80" rx="10" fill="#faece7"/>
+  <text class="label" x="660" y="304">Infrastructure · I/O adapters</text>
+  <text class="note" x="660" y="334">Persistence and external effects</text>
+
+  <path class="arrow" d="M280 356 V382 H360 V410"/>
+  <path class="arrow" d="M600 356 V382 H520 V410"/>
+  <rect class="box" x="280" y="410" width="320" height="66" rx="10" fill="#eeedfe"/>
+  <text class="label" x="440" y="437">Application</text>
+  <text class="note" x="440" y="460">Use cases and dependency contracts</text>
+
+  <path class="arrow" d="M440 476 V510"/>
+  <path class="arrow" d="M180 356 V544 H280"/>
+  <text class="small" x="125" y="468">Boundary</text>
+  <text class="small" x="125" y="487">values only</text>
+  <path class="arrow" d="M700 356 V544 H600"/>
+  <rect class="box" x="280" y="510" width="320" height="66" rx="10" fill="#e1f5ee"/>
+  <text class="label" x="440" y="537">Domain</text>
+  <text class="note" x="440" y="560">Pure decisions from explicit inputs</text>
+
+  <text class="note" x="440" y="625">Other modules: published contracts only — never internals.</text>
+  <text class="note" x="440" y="651">Shared technical adapters: wired through contracts, not imported by Domain.</text>
+  <text class="small" x="440" y="681">Key dependencies shown. Core rule R02 defines the complete rules.</text>
+</svg>
