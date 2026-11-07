@@ -58,7 +58,7 @@ The diagram shows logical responsibilities, not required folders or runtime call
 
 - [`kit/AGENTS.md`](kit/AGENTS.md) — copyable agent instructions.
 - [`kit/docs/architecture/rules.md`](kit/docs/architecture/rules.md) — authoritative, language-neutral core with stable rule IDs.
-- [`kit/docs/architecture/profiles/`](kit/docs/architecture/profiles/requirements.md) — Go language mapping and validation scope.
+- [`kit/docs/architecture/profiles/`](kit/docs/architecture/profiles/requirements.md) — Go and PHP language mappings and validation scope.
 - [`kit/docs/architecture/project.md`](kit/docs/architecture/project.md) — target-project configuration template.
 - [`enforcement/`](enforcement/requirements.md) — checker assets and explicit support status.
 - [`examples/`](examples/requirements.md) — the shared invoice-voiding scenario and fixture requirements.
@@ -72,7 +72,7 @@ See the [support matrix](kit/docs/architecture/profiles/requirements.md) for val
 3. Complete `docs/architecture/project.md`: adopted revision, application roots, language profiles, source/data ownership, execution semantics, verification commands, and deviations. Adjust paths consistently if the project uses a different documentation location.
 4. Follow the [greenfield](kit/docs/architecture/greenfield.md) or [migration](kit/docs/architecture/migration.md) procedure. Install only checks whose support and configuration have been verified for the project. Copied documentation is not installed enforcement.
 
-For Go, follow the self-contained [checker installation guide](kit/docs/architecture/go-enforcement.md). Examples are optional reference evidence, not code every adopting application must include.
+For Go, follow the self-contained [checker installation guide](kit/docs/architecture/go-enforcement.md); for PHP, the [PHP enforcement guide](kit/docs/architecture/php-enforcement.md). Examples are optional reference evidence, not code every adopting application must include.
 
 The installed guidance is self-contained; repository maintenance files and example sources are not required at runtime. Agents read only the selected language profiles and relevant companions.
 

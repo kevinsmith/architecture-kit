@@ -9,4 +9,4 @@ Apply the [core rules](rules.md). This procedure assumes no particular framework
 5. **Specify behavioral guarantees.** For the first workflow, define expected outcomes, authorization scope, transaction participation, external effects, and delivery semantics. Select only infrastructure the workflow actually needs (R10–R14).
 6. **Install verification.** Use the selected profiles and the [verification map](verification.md) to choose checks. Configure CI and add permitted/forbidden fixtures for architecture checks. Run meaningful behavioral and integration tests. Record which guarantees remain review obligations (R17).
 
-For the supplied Go checker, follow [Go enforcement installation](go-enforcement.md).
+For the supplied checks, follow [Go enforcement installation](go-enforcement.md) or [PHP enforcement installation](php-enforcement.md).
