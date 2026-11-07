@@ -6,9 +6,10 @@ Maps the [core](../rules.md) to Go, validated on Go 1.27.1 with SQLite. Installa
 
 - An architectural module is not necessarily a Go module; one `go.mod` can hold many capabilities. Classify every production package, file, and relevant symbol, including `main`, generated code, and deployed build-tag variants.
 - Prefer small consumer-defined interfaces when abstraction is needed. A provider satisfies them without importing the consumer; the consumer still depends on the provider's module, so declare that dependency (R03); the checker verifies it where composition wires a concrete provider into the interface. Published function APIs are also contracts; give their boundary types an explicit public home that does not expose provider internals.
+- Publish contracts in a `contracts` package in the owner's tree, such as `billing/contracts`. Go's naming advice discourages generic names, but `internal/` cannot tell composition from other modules, so the name is what shows an import is published (R05). Mark a module's root package `public: true` only when another module calls it; its exported signatures must then name no internal types. A technical contract no module owns goes in a Shared Infrastructure contract package, such as `platform/contracts`, classified with module `shared`.
 - Domain uses plain structs, methods, and functions. Pass `time.Time` and loaded data instead of calling clocks, repositories, or randomness sources. Do not add an interface per struct. Map iteration order is randomized; sort keys before any order-dependent Domain decision.
 - Passing a struct by value does not copy the slices, maps, or pointers it holds. Copy shared values or document who owns them (R05).
-- Shared value types belong in a contract package; small pure helpers stay local or use the standard library; a reusable technical library becomes its own Go module, governed as an external dependency; effectful technical code is Shared Infrastructure (R05, R08).
+- Shared value types belong in their owner's contract package; small pure helpers stay local or use the standard library; an unowned value type or reusable technical library becomes its own Go module, governed as an external dependency; effectful technical code is Shared Infrastructure (R05, R08).
 
 ### Visibility, composition, and ownership
 

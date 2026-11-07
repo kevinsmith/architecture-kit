@@ -54,7 +54,7 @@ For each selected checker, demonstrate that valid code passes and the correspond
 | Published Access contract | Billing imports Access internals | R02–R03 |
 | Declared module dependency | Undeclared cross-module contract import | R03 |
 | Explicit time supplied to Domain | Domain calls even an injected live clock | R04 |
-| Shared system clock in Infrastructure | Effectful implementation in Kernel | R05 |
+| Shared system clock in Infrastructure | Effectful implementation in a published contract | R05 |
 | Explicit module assembly | Business code resolves a global service | R06 |
 | Classified root-level function or entry point | Production code outside all classifications | R02 |
 | Boundary schema uses defined collections | Boundary uses an unstructured payload escape hatch | R10 |

@@ -30,7 +30,7 @@ Rules for applications organized around business or capability boundaries, whate
 | Application | Use cases, authorization coordination, transactions, typed event handlers |
 | Presentation (driving adapter) | Decode/validate external representations, invoke use cases, encode outcomes |
 | Infrastructure (driven adapter) | Persistence, external effects, vendor integration |
-| Published contracts (Kernel) | Cross-module agreements and shared data |
+| Published contracts | Cross-module agreements and shared data |
 | Shared Infrastructure | Reusable technical adapters, such as a system clock |
 | Composition (Bootstrap) | Configure resources, choose implementations, assemble dependencies |
 
@@ -40,7 +40,7 @@ Permitted dependencies, where "own" means the same module:
 - **Application:** own Application and Domain; contracts it defines; other modules' published contracts, within declared module dependencies (R03).
 - **Presentation:** own Presentation and Application; the values in that Application's boundary signatures, but not Domain decisions.
 - **Infrastructure:** own Infrastructure; the contracts and values of its own Application and Domain; published contracts the adapter needs.
-- **Published contracts (Kernel):** other published contracts.
+- **Published contracts:** other published contracts.
 - **Shared Infrastructure:** own Shared Infrastructure; published or consumer-defined contracts.
 - **Composition:** anything needed to configure and wire components, but no business decisions.
 
@@ -90,16 +90,18 @@ No other dependency on the codebase is permitted. External libraries are governe
 
 **Must:**
 - Share a contract only for a demonstrated cross-module need: one provider and one actual external consumer suffice. Keep module-local abstractions local.
-- Limit Kernel to published contracts and data, including pure behavior intrinsic to those values. Purity alone does not justify promoting a helper.
+- Publish each contract under its owner, not in a central shared namespace. Every import of it must show that it is published and who owns it, through its package, namespace, or path, or through language-enforced visibility that leaves only the published surface importable. Classification configuration alone does not satisfy this.
+- Limit published contracts to agreements and data, including pure behavior intrinsic to those values. Purity alone does not justify promoting a helper.
 - Keep private domain and storage models out of published signatures.
 - Keep shared data from becoming a mutable communication channel; profiles define how ownership, copying, or immutability achieve this.
 - Put evolving business behavior in its owning module, not a shared utility area.
 
 **Notes:**
-- Kernel is a logical role, not a required central package. Consumer-owned interfaces and module-owned public APIs are both valid contracts where idiomatic. A module may implement its published function API in Application; only the published surface becomes the contract.
+- Module-owned public APIs are valid contracts where idiomatic; a module may implement its published function API in Application, and only the published surface becomes the contract. A consumer-owned interface that the provider satisfies without importing the consumer stays with the consumer and needs no published home.
+- A technical contract no business module owns, such as a unit of work several modules share, is published by Shared Infrastructure, under the namespace the project declares for it in [project configuration](project.md); importing modules declare that dependency (R03). A shared value type no module owns, such as money, belongs in a library governed as an external dependency (R08).
 - One shared technical adapter, such as a system clock, may serve many use cases from Shared Infrastructure.
 
-**Why:** A narrow shared vocabulary limits system-wide coupling without duplicating technical adapters.
+**Why:** A narrow shared vocabulary limits system-wide coupling without duplicating technical adapters. Contracts recognizable at each import let readers and import checks tell published agreements from internals, even where the language cannot restrict imports. Keeping each contract with its owner leaves no contract without someone accountable for changing it, and a module's published surface changes alongside its implementation.
 
 ## R06 — Explicit composition
 
