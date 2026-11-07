@@ -8,6 +8,8 @@ Identity lifecycle, authentication, and access grants are distinct responsibilit
 
 Keep capability-specific data with its owning module: Billing owns its payer records, not extra billing fields in a central identity dataset. Shared identifiers connect those records without importing another module's private model. Do not invent principal kinds or module splits before they are needed.
 
+**Review signal:** a schema change that adds a capability-specific field, such as a billing plan or notification preference, to the central user dataset belongs in that capability's module as its own user-keyed dataset (R09).
+
 ## Three separate checks
 
 For “void an unsettled invoice belonging to an organization where this actor has permission”:
