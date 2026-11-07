@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"example.com/architecture/invoice/access"
+	"example.com/architecture/invoice/access/internal/policy"
 )
 
 type Grants struct{ db *sql.DB }
@@ -19,13 +19,13 @@ PRIMARY KEY (actor, permission, organization))`)
 	return err
 }
 
-func (g Grants) Find(ctx context.Context, actor, permission, organization string) (access.Grant, bool, error) {
-	var grant access.Grant
+func (g Grants) Find(ctx context.Context, actor, permission, organization string) (policy.Grant, bool, error) {
+	var grant policy.Grant
 	err := g.db.QueryRowContext(ctx, `SELECT actor, permission, organization FROM access_grants
 WHERE actor = ? AND permission = ? AND organization = ?`, actor, permission, organization).Scan(
 		&grant.Actor, &grant.Permission, &grant.Organization)
 	if errors.Is(err, sql.ErrNoRows) {
-		return access.Grant{}, false, nil
+		return policy.Grant{}, false, nil
 	}
 	return grant, err == nil, err
 }

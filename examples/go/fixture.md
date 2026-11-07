@@ -18,13 +18,17 @@ Tests use temporary on-disk SQLite databases with foreign keys, WAL, and a busy 
 
 [`architecture.json`](architecture.json) classifies every production package and declares module dependencies. Names are illustrative:
 
-- `billing/domain` and `access/grant.go`: pure decisions over supplied values. Access's file-role override keeps the small capability in one package without dropping its logical boundary.
+- `billing/internal/domain`, `access/internal/policy`: pure decisions over supplied values.
 - `billing`, `access`, `notifications`: Application functions/services and consumer-owned interfaces.
-- `billing/sqlite`, `access/sqlite`: adapters accessing only their owner's tables.
+- `billing/internal/ports`: Billing's persistence ports, internal because they name Domain types.
+- `billing/internal/sqlite`, `access/internal/sqlite`: adapters accessing only their owner's tables.
+- `billing/open.go`, `access/open.go`: module assembly functions, classified as composition by file-role overrides. Central composition cannot import a module's `internal/` packages, so each module wires its own adapters.
 - `notifications/input`: a driving boundary with runtime JSON validation.
 - `billing/contracts`: owner-published event data, explicit typed recipients, and intrinsic validation; no central contracts package is required.
 - `platform`: one shared system clock, supplied to Application, never Domain.
-- `assembly`: explicit composition and database-driver registration. The fixture needs no HTTP server or DI container.
+- `assembly`: explicit composition and database-driver registration. It calls each module's assembly function. The fixture needs no HTTP server or DI container.
+
+Private packages sit under each module's `internal/`, so the compiler keeps other modules out of them. The integration suite lives in `billing/` because it seeds and inspects Billing's storage through its internal adapter.
 
 Billing consumes an interface that Access satisfies without importing Billing. Notifications likewise satisfies Billing's subscriber interface without importing it. Shared event data connects them without exposing private entities. The declared module graph is Billing → Access and Notifications → Billing; Billing does not name its subscribers, and the Billing → Access dependency appears only in composition, where the checker verifies it.
 

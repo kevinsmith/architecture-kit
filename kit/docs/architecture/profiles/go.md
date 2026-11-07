@@ -14,7 +14,8 @@ Maps the [core](../rules.md) to Go, validated on Go 1.27.1 with SQLite. Installa
 ### Visibility, composition, and ownership
 
 - Visibility is package-wide, so roles colocated in one package can reach each other; file-role checks do not create encapsulation. Use separate packages when compiler isolation matters.
-- `billing/internal/invoice` is importable only within `billing`; a repository-wide `internal/` does not isolate sibling modules. Put assembly that needs a module's internals inside that module's tree and expose an assembly function. Do not export internals for central wiring.
+- By default, put each module's private packages, such as Domain, ports that name Domain types, and driven adapters, under `<module>/internal/`. `billing/internal/invoice` is importable only within `billing`; a repository-wide `internal/` does not isolate sibling modules. Outside `internal/` keep only what other code must import: the module's root package, published contracts, and driving adapters that composition registers. The checker, not the compiler, keeps other modules out of the root package and adapters.
+- Central composition cannot import a module's internals either. Expose an assembly function from the module's root package in a file classified as composition, such as `billing/open.go`. Do not export internals for central wiring.
 - Put interface assertions such as `var _ consumer.Port = Provider{}` in composition or consumer tests. A provider that imports the consumer for an assertion recreates the coupling the interface removed.
 - Published signatures use builtins, approved value and execution-context types, and intentionally published types. Exporting a function does not make it acceptable to leak a sibling's Domain or persistence model.
 - Keep database handles inside adapters after assembly. `*sql.DB` is a concurrency-safe pool; `*sql.Tx` and a reserved `*sql.Conn` belong to one unit of work, never to long-lived service fields.

@@ -1,9 +1,13 @@
 package access
 
-import "context"
+import (
+	"context"
+
+	"example.com/architecture/invoice/access/internal/policy"
+)
 
 type Grants interface {
-	Find(ctx context.Context, actor, permission, organization string) (Grant, bool, error)
+	Find(ctx context.Context, actor, permission, organization string) (policy.Grant, bool, error)
 }
 
 type Service struct{ Grants Grants }
@@ -13,5 +17,5 @@ func (s Service) Can(ctx context.Context, actor, permission, organization string
 	if err != nil || !found {
 		return false, err
 	}
-	return Allows(grant, actor, permission, organization), nil
+	return policy.Allows(grant, actor, permission, organization), nil
 }

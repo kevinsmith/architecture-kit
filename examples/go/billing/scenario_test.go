@@ -1,4 +1,4 @@
-package invoice_test
+package billing_test
 
 import (
 	"context"
@@ -16,8 +16,9 @@ import (
 	"example.com/architecture/invoice/assembly"
 	"example.com/architecture/invoice/billing"
 	"example.com/architecture/invoice/billing/contracts"
-	"example.com/architecture/invoice/billing/domain"
-	billingdb "example.com/architecture/invoice/billing/sqlite"
+	"example.com/architecture/invoice/billing/internal/domain"
+	"example.com/architecture/invoice/billing/internal/ports"
+	billingdb "example.com/architecture/invoice/billing/internal/sqlite"
 	"example.com/architecture/invoice/notifications"
 	"example.com/architecture/invoice/notifications/input"
 )
@@ -126,7 +127,7 @@ func event() contracts.InvoiceVoided {
 	}
 }
 
-func tentative(ctx context.Context, tx billing.Transaction) error {
+func tentative(ctx context.Context, tx ports.Transaction) error {
 	before := domain.Invoice{ID: "inv", OrganizationID: "org-a", Status: domain.Open, Version: 0}
 	next := before
 	next.Status, next.Version = domain.Voided, 1
@@ -228,7 +229,7 @@ func TestV05ExplicitAbortAndUnexpectedFailure(t *testing.T) {
 			var recovered any
 			func() {
 				defer func() { recovered = recover() }()
-				err = runtime.Invoices.Run(ctx, func(tx billing.Transaction) error {
+				err = runtime.Invoices.Run(ctx, func(tx ports.Transaction) error {
 					if err := tentative(ctx, tx); err != nil {
 						return err
 					}
@@ -299,7 +300,7 @@ func TestV07UncommittedVisibilityAndDurableRetry(t *testing.T) {
 	inserted, release := make(chan struct{}), make(chan struct{})
 	done := make(chan error, 1)
 	go func() {
-		err := runtime.Invoices.Run(context.Background(), func(tx billing.Transaction) error {
+		err := runtime.Invoices.Run(context.Background(), func(tx ports.Transaction) error {
 			if err := tentative(context.Background(), tx); err != nil {
 				return err
 			}
@@ -511,7 +512,7 @@ WHEN OLD.id = 'inv-b:void:1' BEGIN SELECT RAISE(ABORT, 'ack failure'); END`); er
 }
 
 type heldStore struct {
-	billing.Store
+	ports.Store
 	loaded  chan struct{}
 	release chan struct{}
 }

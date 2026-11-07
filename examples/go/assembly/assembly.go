@@ -6,9 +6,7 @@ import (
 	"net/url"
 
 	"example.com/architecture/invoice/access"
-	accessdb "example.com/architecture/invoice/access/sqlite"
 	"example.com/architecture/invoice/billing"
-	billingdb "example.com/architecture/invoice/billing/sqlite"
 	"example.com/architecture/invoice/notifications"
 	"example.com/architecture/invoice/platform"
 	_ "modernc.org/sqlite"
@@ -40,21 +38,19 @@ func Open(path string, mailer notifications.Mailer, clock billing.Clock) (*Runti
 		return nil, err
 	}
 	db.SetMaxOpenConns(8)
-	invoices := billingdb.New(db)
-	grants := accessdb.New(db)
-	for _, create := range []func(context.Context) error{invoices.CreateSchema, grants.CreateSchema} {
-		if err := create(context.Background()); err != nil {
-			db.Close()
-			return nil, err
-		}
-	}
 	if clock == nil {
 		clock = platform.SystemClock{}
 	}
-	authorizer := access.Service{Grants: grants}
-	return &Runtime{
-		db: db, Access: authorizer,
-		Billing:    billing.New(invoices, authorizer, clock),
-		Dispatcher: billing.Dispatcher{Outbox: invoices, Subscriber: notifications.Service{Mailer: mailer}},
-	}, nil
+	ctx := context.Background()
+	authorizer, err := access.Open(ctx, db)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	service, dispatcher, err := billing.Open(ctx, db, authorizer, clock, notifications.Service{Mailer: mailer})
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	return &Runtime{db: db, Access: authorizer, Billing: service, Dispatcher: dispatcher}, nil
 }

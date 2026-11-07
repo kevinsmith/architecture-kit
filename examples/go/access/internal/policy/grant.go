@@ -1,4 +1,5 @@
-package access
+// Package policy holds Access's pure grant decision.
+package policy
 
 type Grant struct {
 	Actor        string

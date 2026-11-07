@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"example.com/architecture/invoice/billing/contracts"
-	"example.com/architecture/invoice/billing/domain"
+	"example.com/architecture/invoice/billing/internal/domain"
+	"example.com/architecture/invoice/billing/internal/ports"
 )
 
 // Rejections are exposed here so callers need not import private Domain code.
@@ -31,30 +32,18 @@ type Access interface {
 	Can(ctx context.Context, actor, permission, organization string) (bool, error)
 }
 
-type Transaction interface {
-	Save(ctx context.Context, before, next domain.Invoice) (bool, error)
-	AddEvent(context.Context, contracts.InvoiceVoided) error
-}
-
-type Store interface {
-	Load(context.Context, string) (domain.Invoice, bool, error)
-	// Run commits on nil and rolls back on any error, including a rejection.
-	// Nested units of work are not supported; use the supplied Transaction.
-	Run(context.Context, func(Transaction) error) error
-}
-
 type Command struct {
 	InvoiceID      string
 	OrganizationID string
 }
 
 type Service struct {
-	store  Store
+	store  ports.Store
 	access Access
 	clock  Clock
 }
 
-func New(store Store, access Access, clock Clock) Service {
+func newService(store ports.Store, access Access, clock Clock) Service {
 	return Service{store: store, access: access, clock: clock}
 }
 
@@ -87,7 +76,7 @@ func (s Service) Void(ctx context.Context, actor string, command Command) error 
 		InvoiceID: invoice.ID, OrganizationID: invoice.OrganizationID,
 		OccurredAt: now.UnixNano(), Recipients: []contracts.Recipient{{Address: invoice.Contact}},
 	}
-	return s.store.Run(ctx, func(tx Transaction) error {
+	return s.store.Run(ctx, func(tx ports.Transaction) error {
 		saved, err := tx.Save(ctx, invoice, next)
 		if err != nil {
 			return fmt.Errorf("save invoice: %w", err)

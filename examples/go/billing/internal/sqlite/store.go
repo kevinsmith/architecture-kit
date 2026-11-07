@@ -8,9 +8,9 @@ import (
 	"errors"
 	"time"
 
-	"example.com/architecture/invoice/billing"
 	"example.com/architecture/invoice/billing/contracts"
-	"example.com/architecture/invoice/billing/domain"
+	"example.com/architecture/invoice/billing/internal/domain"
+	"example.com/architecture/invoice/billing/internal/ports"
 )
 
 type Store struct{ db *sql.DB }
@@ -46,7 +46,7 @@ FROM billing_invoices WHERE id = ?`, id).Scan(
 	return invoice, true, nil
 }
 
-func (s Store) Run(ctx context.Context, fn func(billing.Transaction) error) error {
+func (s Store) Run(ctx context.Context, fn func(ports.Transaction) error) error {
 	connection, err := s.db.Conn(ctx)
 	if err != nil {
 		return err
