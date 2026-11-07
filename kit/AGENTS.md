@@ -21,6 +21,7 @@ Read only the relevant companions:
 
 - `docs/architecture/greenfield.md` — new application setup.
 - `docs/architecture/migration.md` — existing code, baselines, or boundary corrections.
+- `docs/architecture/boundaries.md` — adding, splitting, merging, or reviewing modules; fixing a boundary violation.
 - `docs/architecture/identity-and-access.md` — identity, authentication, authorization.
 - `docs/architecture/reporting.md` — cross-module reporting and analytical data.
 - `docs/architecture/verification.md` — setting up or changing checks.

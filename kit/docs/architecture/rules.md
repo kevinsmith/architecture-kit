@@ -66,6 +66,7 @@ No other dependency on the codebase is permitted. External libraries are governe
 
 **Notes:**
 - A language package, crate, process, or deployment unit is not automatically an architectural module.
+- See [module boundaries](boundaries.md) for tests that judge a proposed boundary and fixes for common violations.
 
 **Why:** Explicit ownership and an acyclic module graph contain change. Each module can be built, tested, and reviewed with only the modules it depends on, and concurrent work in different modules does not collide. They also bound what an agent must consider for a change.
 
