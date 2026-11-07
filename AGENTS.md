@@ -13,4 +13,4 @@ This is the canonical architecture kit, not an application. Optimize for agents 
 
 Keep this maintenance file separate from `kit/AGENTS.md`. Do not invent application paths or build commands. When changing a rule, check the profiles, companions, reference scenario, enforcement claims, and README dependency diagram (`docs/modular-monolith-dependency-diagram.svg`) for consistency. Distinguish proposed mechanisms from verified checks.
 
-Run `python3 scripts/verify.py` before proposing a commit. It uses local Go or the pinned Docker toolchain and validates documentation, Go checks, and installation. `--docker` forces Docker; `--local` is used by CI.
+Run `python3 scripts/verify.py` before proposing a commit. It runs the Go phases in a pinned Docker image, the same one CI uses, and validates documentation, Go checks, and installation.

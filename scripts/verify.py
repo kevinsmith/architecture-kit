@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify repository content, Go fixtures, and an isolated copy/install round trip."""
+"""Verify repository content, then run the Go phases in a pinned Docker image."""
 
 import argparse
 import json
@@ -13,7 +13,7 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-IMAGE = "golang:1.27.1@sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"
+GO_IMAGE = "golang:1.27.1@sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"
 
 
 def run(command, cwd=ROOT, **kwargs):
@@ -153,19 +153,25 @@ def golangci_version():
     return version.group(1)
 
 
-def docker(mounts, workdir, script):
-    volumes = ["-v", "architecture-kit-go-modules:/go/pkg/mod", "-v", "architecture-kit-go-build:/root/.cache/go-build"]
-    for source, target in mounts.items():
-        volumes += ["-v", f"{source}:{target}"]
-    run(["docker", "run", "--rm", *volumes, "-w", workdir, IMAGE, "bash", "-ec", script])
+GO_VOLUMES = {"architecture-kit-go-modules": "/go/pkg/mod", "architecture-kit-go-build": "/root/.cache/go-build"}
 
 
-def go_checks(use_docker):
-    if use_docker:
-        docker({ROOT: "/workspace"}, "/workspace", "BIN=/tmp\n" + GO_CHECKS)
-        return
-    with tempfile.TemporaryDirectory(prefix="architecture-checks-") as binaries:
-        run(["bash", "-ec", GO_CHECKS], env={**os.environ, "BIN": binaries})
+def docker(image, volumes, mounts, workdir, script, env=()):
+    # Named volumes cache dependencies between runs. A bare env name passes the
+    # host value only when it is set.
+    arguments = []
+    for source, target in {**volumes, **mounts}.items():
+        arguments += ["-v", f"{source}:{target}"]
+    for variable in env:
+        arguments += ["-e", variable]
+    run(["docker", "run", "--rm", *arguments, "-w", workdir, image, "bash", "-ec", script])
+
+
+def go_checks():
+    # The container's root user does not own the mounted checkout, so Git refuses to
+    # report VCS status; verification binaries need no VCS stamp.
+    docker(GO_IMAGE, GO_VOLUMES, {ROOT: "/workspace"}, "/workspace", "BIN=/tmp\n" + GO_CHECKS,
+           env=["GOFLAGS=-buildvcs=false"])
 
 
 def prepare_installation(base):
@@ -191,34 +197,28 @@ def prepare_installation(base):
     return app, tool
 
 
-def installation(use_docker):
+def installation():
     with tempfile.TemporaryDirectory(prefix="architecture-adoption-") as temporary:
         base = Path(temporary)
         prepare_installation(base)
         version = golangci_version()
-        if use_docker:
-            docker({base: "/adoption"}, "/adoption", f"BASE=/adoption GOLANGCI_VERSION={version}\n" + SMOKE_TEST)
-        else:
-            run(["bash", "-ec", SMOKE_TEST], env={**os.environ, "BASE": str(base), "GOLANGCI_VERSION": version})
+        # Return the container's root-owned files so the host can remove the directory.
+        owner = f"trap 'chown -R {os.getuid()}:{os.getgid()} /adoption' EXIT\n"
+        docker(GO_IMAGE, GO_VOLUMES, {base: "/adoption"}, "/adoption",
+               owner + f"BASE=/adoption GOLANGCI_VERSION={version}\n" + SMOKE_TEST)
         print("Copy/install smoke test passed for the standalone command and the golangci-lint plugin, "
               "including intended R02 rejections.", flush=True)
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--docker", action="store_true", help="use the pinned Go image even when local Go exists")
-    parser.add_argument("--local", action="store_true", help="require the local Go toolchain (used by CI)")
-    args = parser.parse_args()
-    if args.docker and args.local:
-        parser.error("choose --docker or --local")
+    argparse.ArgumentParser(description=__doc__).parse_args()
+    if not shutil.which("docker"):
+        raise RuntimeError("Install Docker; the Go phases run only in the pinned image")
     run([sys.executable, "-m", "unittest", "discover", "-s", "scripts", "-p", "test_*.py"])
     content()
-    use_docker = args.docker or (not args.local and not shutil.which("go"))
-    if use_docker and not shutil.which("docker"):
-        raise RuntimeError("Install Go 1.27.1 with race-detector support, or Docker")
-    # Host Python validates docs; the Go image only runs the Go phases.
-    go_checks(use_docker)
-    installation(use_docker)
+    # Host Python validates docs; the image runs the Go phases, here and in CI.
+    go_checks()
+    installation()
     print("All verification passed.")
 
 

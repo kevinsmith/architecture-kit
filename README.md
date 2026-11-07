@@ -88,7 +88,7 @@ From the repository root:
 python3 scripts/verify.py
 ```
 
-Requires Python 3.10+ and Git, plus either Go 1.27.1 with race-detector support (including a C toolchain) or Docker. When Go is absent, the command uses the pinned Go Docker image automatically; `--docker` selects it explicitly and `--local` requires local Go. Initial dependency/image downloads need network access.
+Requires Python 3.10+, Git, and Docker. The Go phases always run in the pinned Go 1.27.1 image, so a desktop and CI run the same toolchain; a locally installed Go is not used. Initial dependency/image downloads need network access.
 
 This checks documentation links and rule references, whitespace, Go formatting, checker fixtures, the real-SQLite scenario with race detection, and an isolated copy/install smoke test. The smoke test builds the copied checker as a standalone command and as a golangci-lint plugin, and confirms that each accepts the reference and rejects unclassified code outside the canonical repository. CI uses the same entry point. Hosted CI results must still be checked after pushing.
 

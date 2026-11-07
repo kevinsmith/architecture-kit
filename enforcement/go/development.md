@@ -11,4 +11,4 @@ go test -race -count=1 ./...
 go build -o /tmp/archcheck ./cmd/archcheck && (cd ../../examples/go && /tmp/archcheck ./...)
 ```
 
-Or run `python3 scripts/verify.py` from the repository root to include documentation, the [SQLite scenario](../../examples/go/fixture.md), and installation verification of both hosts. Fixture tests demonstrate permitted and forbidden code; they do not prove every core guarantee.
+`python3 scripts/verify.py` from the repository root is the source of truth: it runs these checks in the pinned Go image, with documentation, the [SQLite scenario](../../examples/go/fixture.md), and installation verification of both hosts. Fixture tests demonstrate permitted and forbidden code; they do not prove every core guarantee.
