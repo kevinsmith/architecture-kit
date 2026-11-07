@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify repository content, then run the Go phases in a pinned Docker image."""
+"""Verify repository content, then run the Go and PHP phases in pinned Docker images."""
 
 import argparse
 import json
@@ -14,6 +14,8 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 GO_IMAGE = "golang:1.27.1@sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"
+# The official Composer image bundles PHP 8.5 with pdo_sqlite, zip, and Python 3.
+PHP_IMAGE = "composer:2.11.1@sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb6722ac87d0"
 
 
 def run(command, cwd=ROOT, **kwargs):
@@ -25,8 +27,9 @@ def documentation(root, installed=False):
     root = root.resolve()
     boundary = root if installed else (ROOT / "kit").resolve()
     errors = []
+    skipped = {".git", "vendor"}  # Repository metadata and installed dependencies.
     for source in root.rglob("*.md"):
-        if ".git" in source.parts:
+        if skipped & set(source.parts):
             continue
         for target in re.findall(r"\]\(([^)]+)\)", source.read_text()):
             if "://" in target or target.startswith(("mailto:", "#")):
@@ -37,9 +40,20 @@ def documentation(root, installed=False):
             if source.is_relative_to(boundary) and not path.is_relative_to(boundary):
                 errors.append(f"{source}: nonportable link {target}")
     for svg in root.rglob("*.svg"):
-        ET.parse(svg)
+        if not skipped & set(svg.parts):
+            ET.parse(svg)
     if errors:
         raise RuntimeError("\n".join(errors))
+
+
+# Each executable example must label tests with every required scenario ID. An
+# example directory that exists is required; its tests are matched by name only.
+SCENARIO_TESTS = {
+    "Go": ("examples/go/", "_test.go", r"^\s*func\s+(Test\w+)\s*\(", r"Test((?:V\d+)+)",
+           r"""//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\])*"|`[^`]*`|'(?:\\.|[^'\\])*'"""),
+    "PHP": ("examples/php/tests/", "Test.php", r"^\s*public\s+function\s+(test\w+)\s*\(", r"test((?:V\d+)+)",
+            r"""//[^\n]*|#(?!\[)[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'"""),
+}
 
 
 def scenario_evidence(root, files):
@@ -54,31 +68,31 @@ def scenario_evidence(root, files):
     duplicates = sorted({label for label in required if required.count(label) > 1})
     if duplicates:
         raise RuntimeError(f"{specification}: duplicate scenario IDs {', '.join(duplicates)}")
-    known, covered, errors = set(required), set(), []
-    for name in sorted(set(files) - {""}):
-        if not name.startswith("examples/go/") or not name.endswith("_test.go"):
+    known, errors = set(required), []
+    for language, (directory, suffix, declaration, label, ignored) in SCENARIO_TESTS.items():
+        if not (root / directory).is_dir():
             continue
-        source = root / name
-        if not source.exists():
-            continue
-        # Ignore declarations quoted in comments or literals; this is not Go type analysis.
-        text = re.sub(
-            r"""//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\])*"|`[^`]*`|'(?:\\.|[^'\\])*'""",
-            lambda match: re.sub(r"[^\n]", " ", match.group()),
-            source.read_text(), flags=re.S,
-        )
-        for test in sorted(re.findall(r"^\s*func\s+(Test\w+)\s*\(", text, re.M)):
-            prefix = re.match(r"Test((?:V\d+)+)", test)
-            if prefix is None:
+        covered = set()
+        for name in sorted(set(files) - {""}):
+            if not name.startswith(directory) or not name.endswith(suffix):
                 continue
-            labels = set(re.findall(r"V\d+", prefix.group(1)))
-            covered.update(labels)
-            unknown = sorted(labels - known)
-            if unknown:
-                errors.append(f"{source}: {test} references undefined scenario IDs {', '.join(unknown)}")
-    missing = sorted(known - covered)
-    if missing:
-        errors.append(f"{specification}: missing Go test labels {', '.join(missing)}")
+            source = root / name
+            if not source.exists():
+                continue
+            # Ignore declarations quoted in comments or literals; this is not type analysis.
+            text = re.sub(ignored, lambda match: re.sub(r"[^\n]", " ", match.group()), source.read_text(), flags=re.S)
+            for test in sorted(re.findall(declaration, text, re.M)):
+                prefix = re.match(label, test)
+                if prefix is None:
+                    continue
+                labels = set(re.findall(r"V\d+", prefix.group(1)))
+                covered.update(labels)
+                unknown = sorted(labels - known)
+                if unknown:
+                    errors.append(f"{source}: {test} references undefined scenario IDs {', '.join(unknown)}")
+        missing = sorted(known - covered)
+        if missing:
+            errors.append(f"{specification}: missing {language} test labels {', '.join(missing)}")
     if errors:
         raise RuntimeError("\n".join(errors))
 
@@ -100,7 +114,7 @@ def content():
         if b"\0" in data:
             raise RuntimeError(f"Unexpected binary artifact: {name}")
         text = data.decode()
-        if source.suffix in {".md", ".go", ".svg"}:
+        if source.suffix in {".md", ".go", ".svg", ".php", ".toml"}:
             unknown = set(re.findall(r"\bR\d+\b", text)) - set(ids)
             if unknown:
                 raise RuntimeError(f"{source}: undefined rules {', '.join(sorted(unknown))}")
@@ -146,6 +160,26 @@ reject "$BASE/architecture-tool/golangci-lint-archcheck" run --enable-only=archc
 """
 
 
+# The checkout is mounted read-only. The container works on a copy whose vendor/
+# is a named volume, so a host vendor/ with other platforms' binaries is never used.
+PHP_CHECKS = """
+tar -C /workspace/examples/php --exclude=./vendor --exclude=./.phpunit.cache -cf - . | tar -C /app -xf -
+cd /app
+composer validate --strict --no-check-publish
+composer install --no-interaction --no-progress
+vendor/bin/mago guard
+vendor/bin/mago analyze
+vendor/bin/phpunit
+python3 /workspace/enforcement/php/fixtures.py .
+"""
+
+
+def php_checks():
+    docker(PHP_IMAGE, {"architecture-kit-php-vendor": "/app/vendor", "architecture-kit-composer-cache": "/tmp/composer"},
+           {f"{ROOT}": "/workspace:ro"}, "/workspace", PHP_CHECKS, shell="sh",
+           env=["COMPOSER_CACHE_DIR=/tmp/composer", "GITHUB_TOKEN"])
+
+
 def golangci_version():
     version = re.search(r"^version: (v\S+)$", (ROOT / "enforcement/go/.custom-gcl.yml").read_text(), re.M)
     if version is None:
@@ -156,15 +190,15 @@ def golangci_version():
 GO_VOLUMES = {"architecture-kit-go-modules": "/go/pkg/mod", "architecture-kit-go-build": "/root/.cache/go-build"}
 
 
-def docker(image, volumes, mounts, workdir, script, env=()):
+def docker(image, volumes, mounts, workdir, script, shell="bash", env=()):
     # Named volumes cache dependencies between runs. A bare env name passes the
-    # host value only when it is set.
+    # host value only when it is set, such as GITHUB_TOKEN for Mago's download.
     arguments = []
     for source, target in {**volumes, **mounts}.items():
         arguments += ["-v", f"{source}:{target}"]
     for variable in env:
         arguments += ["-e", variable]
-    run(["docker", "run", "--rm", *arguments, "-w", workdir, image, "bash", "-ec", script])
+    run(["docker", "run", "--rm", *arguments, "-w", workdir, image, shell, "-ec", script])
 
 
 def go_checks():
@@ -213,12 +247,13 @@ def installation():
 def main():
     argparse.ArgumentParser(description=__doc__).parse_args()
     if not shutil.which("docker"):
-        raise RuntimeError("Install Docker; the Go phases run only in the pinned image")
+        raise RuntimeError("Install Docker; the Go and PHP phases run only in the pinned images")
     run([sys.executable, "-m", "unittest", "discover", "-s", "scripts", "-p", "test_*.py"])
     content()
-    # Host Python validates docs; the image runs the Go phases, here and in CI.
+    # Host Python validates docs; the images run the language phases, here and in CI.
     go_checks()
     installation()
+    php_checks()
     print("All verification passed.")
 
 

@@ -15,6 +15,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      # verify.py runs the pinned Go image, the same toolchain as a desktop.
-      - name: Verify documentation, Go checks, and installation
+      # verify.py runs the pinned Go and PHP images, the same toolchains as a desktop.
+      - name: Verify documentation, Go and PHP checks, and installation
         run: python3 scripts/verify.py
+        env:
+          # Mago's Composer package downloads its binary from GitHub releases.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

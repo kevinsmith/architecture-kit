@@ -10,7 +10,7 @@ From this directory:
 go test -race -count=1 -timeout=120s ./...
 ```
 
-`python3 scripts/verify.py` from the repository root is the source of truth: it runs these and all other checks in a pinned Docker image. See [verification prerequisites](../../README.md#verify-this-repository). The pinned image digest lives in that script; dependencies are locked in `go.mod`/`go.sum`.
+`python3 scripts/verify.py` from the repository root is the source of truth: it runs these and all other checks in pinned Docker images. See [verification prerequisites](../../README.md#verify-this-repository). The pinned image digest lives in that script; dependencies are locked in `go.mod`/`go.sum`.
 
 Tests use temporary on-disk SQLite databases with foreign keys, WAL, and a busy timeout. No external database server or mail service is required.
 

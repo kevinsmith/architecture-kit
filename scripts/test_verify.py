@@ -283,5 +283,36 @@ func TestV02RawString(t *testing.T) {}
 ''')
 
 
+class PhpScenarioEvidence(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        (self.root / "examples/php/tests").mkdir(parents=True)
+        (self.root / "examples/void-invoice.md").write_text(
+            "## Required evidence\n\n| V01 | Guarantee | R04 |\n| V02 | Guarantee | R04 |\n")
+        self.name = "examples/php/tests/ScenarioTest.php"
+
+    def check(self, body):
+        (self.root / self.name).write_text("<?php\nfinal class ScenarioTest extends TestCase\n{\n" + body + "}\n")
+        scenario_evidence(self.root, [self.name])
+
+    def test_labelled_methods_pass(self):
+        self.check("    public function testV01First(): void {}\n"
+                   "    #[DataProvider('cases')]\n    public function testV02Second(string $case): void {}\n")
+
+    def test_missing_id_fails(self):
+        with self.assertRaisesRegex(RuntimeError, "missing PHP test labels V02"):
+            self.check("    public function testV01First(): void {}\n")
+
+    def test_mentions_in_comments_and_literals_do_not_supply_labels(self):
+        with self.assertRaisesRegex(RuntimeError, "missing PHP test labels V02"):
+            self.check("    public function testV01Real(): void {}\n"
+                       "    // public function testV02LineComment(): void {}\n"
+                       "    # public function testV02HashComment(): void {}\n"
+                       "    /* public function testV02Block(): void {} */\n"
+                       "    private string $quoted = 'public function testV02Quoted(): void {}';\n")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -4,3 +4,5 @@ __pycache__/
 *.test
 coverage.out
 /enforcement/go/golangci-lint-archcheck
+/examples/php/vendor/
+/examples/php/.phpunit.cache/

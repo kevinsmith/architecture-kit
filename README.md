@@ -88,9 +88,9 @@ From the repository root:
 python3 scripts/verify.py
 ```
 
-Requires Python 3.10+, Git, and Docker. The Go phases always run in the pinned Go 1.27.1 image, so a desktop and CI run the same toolchain; a locally installed Go is not used. Initial dependency/image downloads need network access.
+Requires Python 3.10+, Git, and Docker. The Go and PHP phases always run in pinned images, Go 1.27.1 and Composer 2.11.1 with PHP 8.5, so a desktop and CI run the same toolchains; locally installed Go or PHP is not used. Initial dependency/image downloads need network access; set `GITHUB_TOKEN` if GitHub rate-limits the download of Mago's binary.
 
-This checks documentation links and rule references, whitespace, Go formatting, checker fixtures, the real-SQLite scenario with race detection, and an isolated copy/install smoke test. The smoke test builds the copied checker as a standalone command and as a golangci-lint plugin, and confirms that each accepts the reference and rejects unclassified code outside the canonical repository. CI uses the same entry point. Hosted CI results must still be checked after pushing.
+This checks documentation links and rule references, whitespace, Go formatting, checker fixtures, the real-SQLite scenario with race detection, and an isolated copy/install smoke test. The smoke test builds the copied checker as a standalone command and as a golangci-lint plugin, and confirms that each accepts the reference and rejects unclassified code outside the canonical repository. For PHP, it runs Mago's guard and analyzer, the real-SQLite scenario, and the guard fixtures against an isolated copy. CI uses the same entry point. Hosted CI results must still be checked after pushing.
 
 ## License
 

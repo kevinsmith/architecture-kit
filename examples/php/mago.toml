@@ -1,0 +1,152 @@
+php-version = "8.5"
+
+[source]
+paths = ["src"]
+includes = ["vendor"]
+
+[analyzer]
+check-missing-type-hints = true
+check-missing-override = true
+minimum-fail-level = "warning"
+
+# Every rule's reason names the core rule it implements (R17).
+[guard]
+minimum-fail-level = "error"
+
+[guard.perimeter.layers]
+# Reviewed pure built-ins for Domain and published contracts (R04, R08). Approving a
+# class does not approve every use: `new DateTimeImmutable()` reads the clock and
+# remains a review obligation.
+pure = [
+    "DateTimeImmutable", "DateTimeInterface", "DateTimeZone",
+    "UnexpectedValueException", "JsonException", "JsonSerializable", "Override",
+    "array_is_list", "array_keys", "array_map", "clone", "get_object_vars", "implode", "intdiv", "is_array",
+    "is_object", "is_string",
+    "json_decode", "preg_match", "sort",
+    "JSON_THROW_ON_ERROR",
+]
+
+# Composition may depend on anything; nothing permits a dependency on it (R06).
+[[guard.perimeter.rules]]
+namespace = 'App\Bootstrap\'
+permit = ["@all"]
+reason = "R06: composition wires every role."
+
+# Shared Infrastructure: its own code, vendor contracts, and the runtime (R02, R05).
+[[guard.perimeter.rules]]
+namespace = 'App\Platform\'
+permit = ['App\Platform\**', 'Psr\**', "@native"]
+reason = "R02/R05: Shared Infrastructure depends only on itself and published or vendor contracts."
+
+# ---- Access (depends on no module) ----
+[[guard.perimeter.rules]]
+namespace = 'App\Access\Contracts\'
+permit = [{ path = 'App\Access\Contracts\**', kinds = ["class-like", "constant"] }, "@layer:pure"]
+reason = "R05: published contracts depend only on published contracts and pure values."
+
+[[guard.perimeter.rules]]
+namespace = 'App\Access\Domain\'
+permit = [{ path = 'App\Access\Domain\**', kinds = ["class-like", "constant"] }, "@layer:pure"]
+reason = "R04: Domain depends only on itself and reviewed pure built-ins."
+
+[[guard.perimeter.rules]]
+namespace = 'App\Access\Application\'
+permit = ['App\Access\{Application,Domain,Contracts}\**', "@native"]
+reason = "R02/R03: Application depends on its own Application and Domain and on declared modules' contracts."
+
+[[guard.perimeter.rules]]
+namespace = 'App\Access\Infrastructure\'
+permit = ['App\Access\{Infrastructure,Application,Domain,Contracts}\**', "@native"]
+reason = "R02: Infrastructure depends on its own module and declared modules' contracts, never Presentation."
+
+# ---- Billing (depends on Access) ----
+[[guard.perimeter.rules]]
+namespace = 'App\Billing\Contracts\'
+permit = [{ path = 'App\Billing\Contracts\**', kinds = ["class-like", "constant"] }, "@layer:pure"]
+reason = "R05: published contracts depend only on published contracts and pure values."
+
+[[guard.perimeter.rules]]
+namespace = 'App\Billing\Domain\'
+permit = [{ path = 'App\Billing\Domain\**', kinds = ["class-like", "constant"] }, "@layer:pure"]
+reason = "R04: Domain depends only on itself and reviewed pure built-ins."
+
+[[guard.perimeter.rules]]
+namespace = 'App\Billing\Application\'
+permit = ['App\Billing\{Application,Domain,Contracts}\**', 'App\Access\Contracts\**', 'Psr\Clock\ClockInterface', "@native"]
+reason = "R02/R03: Application depends on its own Application and Domain and on declared modules' contracts."
+
+[[guard.perimeter.rules]]
+namespace = 'App\Billing\Infrastructure\'
+permit = ['App\Billing\{Infrastructure,Application,Domain,Contracts}\**', "@native"]
+reason = "R02: Infrastructure depends on its own module and declared modules' contracts, never Presentation."
+
+# ---- Notifications (depends on Billing, whose event it subscribes to) ----
+[[guard.perimeter.rules]]
+namespace = 'App\Notifications\Application\'
+permit = ['App\Notifications\{Application,Domain}\**', 'App\Billing\Contracts\**', "@native"]
+reason = "R02/R03: Application depends on its own Application and Domain and on declared modules' contracts."
+
+[[guard.perimeter.rules]]
+namespace = 'App\Notifications\Presentation\'
+permit = ['App\Notifications\{Presentation,Application}\**', 'App\Billing\Contracts\**', "@native"]
+reason = "R02: Presentation depends on its own Application and declared contracts, never Infrastructure or Domain decisions."
+
+# Entry scripts in the global namespace reach the application only through composition (R06).
+[[guard.perimeter.rules]]
+namespace = "@global"
+permit = ['App\Bootstrap\**', "@native"]
+reason = "R06: entry points reach the application only through composition."
+
+# Restrictions run before permits, so no permit can override them.
+
+# Declared module graph, in dependency order Access, Billing, Notifications (R03).
+# A module may not depend on a module later in the order, which keeps the graph acyclic.
+[[guard.perimeter.restrictions]]
+dependency = 'App\Billing\**'
+deny-from = ['App\Access\**']
+reason = "R03: Access does not depend on Billing; the declared module graph is acyclic."
+
+[[guard.perimeter.restrictions]]
+dependency = 'App\Notifications\**'
+deny-from = ['App\Access\**', 'App\Billing\**']
+reason = "R03: only composition depends on Notifications; Billing does not name its subscribers."
+
+# Nothing depends on composition, and only composition sees a container (R06).
+[[guard.perimeter.restrictions]]
+dependency = 'App\Bootstrap\**'
+allow-from = ['App\Bootstrap\**', "@global"]
+reason = "R06: business code receives dependencies explicitly; nothing depends on composition."
+
+[[guard.perimeter.restrictions]]
+dependency = 'Psr\Container\**'
+allow-from = ['App\Bootstrap\**']
+reason = "R06: only composition may use a container; business code never resolves services."
+
+# Production code never depends on test code (R02).
+[[guard.perimeter.restrictions]]
+dependency = 'Tests\**'
+deny-from = ['**']
+reason = "R02: production code is independent of test-only code."
+
+# Storage stays in Infrastructure; the connection is constructed in composition (R02, R09).
+[[guard.perimeter.restrictions]]
+dependency = 'PDO**'
+allow-from = ['App\*\Infrastructure\**', 'App\Bootstrap\**']
+reason = "R02: storage belongs to Infrastructure; composition constructs the connection."
+
+# Complete classification: any symbol outside a classified namespace fails (R02).
+[[guard.structural.rules]]
+on = "**"
+not-on = '{App\{Access,Billing,Notifications}\{Contracts,Domain,Application,Presentation,Infrastructure}\**,App\Platform\**,App\Bootstrap\**}'
+must-be = []
+reason = "R02: unclassified production code; add it to a module role or a shared or composition namespace."
+
+# Published data cannot become a mutable channel (R05). Exceptions extend non-readonly
+# built-ins and are listed explicitly.
+[[guard.structural.rules]]
+on = 'App\*\Contracts\**'
+not-on = 'App\Billing\Contracts\MalformedEvent'
+target = "class"
+must-be-final = true
+must-be-readonly = true
+reason = "R05: published classes are final readonly values."

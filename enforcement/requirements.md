@@ -2,7 +2,7 @@
 
 Checks implement the [core specification](../kit/docs/architecture/rules.md); they do not define or override it.
 
-See the [profile support matrix](../kit/docs/architecture/profiles/requirements.md) for implementation status, and the [Go checker](go/development.md) and [SQLite scenario](../examples/go/fixture.md) documentation for coverage.
+See the [profile support matrix](../kit/docs/architecture/profiles/requirements.md) for implementation status, and the [Go checker](go/development.md), [PHP checks](php/development.md), and their SQLite scenarios ([Go](../examples/go/fixture.md), [PHP](../examples/php/fixture.md)) for coverage.
 
 ## Checker acceptance criteria
 
