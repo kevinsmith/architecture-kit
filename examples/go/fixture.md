@@ -14,6 +14,8 @@ go test -race -count=1 -timeout=120s ./...
 
 Tests use temporary on-disk SQLite databases with foreign keys, WAL, and a busy timeout. No external database server or mail service is required.
 
+Each module's SQLite adapter creates its own tables with `CREATE TABLE IF NOT EXISTS` when the module's `Open` function, which is composition, assembles it. This is a fixture shortcut that works only because every test database starts empty and is reopened only by the same code: it cannot alter an existing table or record which schema version is applied. An application with persistent data uses versioned migrations instead, kept with each module's Infrastructure and changing only that module's tables (R09), and run by composition or deployment, never by request handling.
+
 ## Architecture mapping
 
 [`architecture.json`](architecture.json) classifies every production package and declares module dependencies. Names are illustrative:
