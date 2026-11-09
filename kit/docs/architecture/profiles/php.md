@@ -33,7 +33,7 @@ Maps the [core](../rules.md) to PHP, validated on PHP 8.5 with PDO SQLite. Insta
 
 ### Driving boundaries
 
-Decode untrusted representations with `json_decode(..., JSON_THROW_ON_ERROR)`. Check the exact set of keys, each field's type, and list shape with `array_is_list`, then build typed values whose constructors reject incomplete data. `array`, `mixed`, `object`, and `stdClass` are not schemas; give every published array a `list<T>` or shape type in its docblock (R10). PHP integers are 64-bit, but many JSON consumers read numbers as floats; encode large integers, such as nanosecond timestamps, as decimal strings.
+Decode untrusted representations with `json_decode($json, false, $depth, JSON_THROW_ON_ERROR)`, so JSON objects decode as objects: with `true`, `{"0": …}` and `[…]` both become a list-shaped PHP array that `array_is_list` cannot tell apart. Check the exact set of keys with `get_object_vars`, each field's type, and that lists are arrays, then build typed values whose constructors reject incomplete data. `array`, `mixed`, `object`, and `stdClass` are not schemas; give every published array a `list<T>` or shape type in its docblock (R10). PHP integers are 64-bit, but many JSON consumers read numbers as floats; encode large integers, such as nanosecond timestamps, as decimal strings.
 
 ## Verification — R17
 
