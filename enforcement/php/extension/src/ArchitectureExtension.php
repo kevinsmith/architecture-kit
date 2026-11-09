@@ -12,6 +12,7 @@ use Override;
 use ArchitectureCheck\Checks\AmbientState;
 use ArchitectureCheck\Checks\HiddenDependencies;
 use ArchitectureCheck\Checks\PublishedSignatures;
+use ArchitectureCheck\Checks\SharedServiceState;
 use ArchitectureCheck\Checks\TableOwnership;
 use ArchitectureCheck\Checks\TransactionEffects;
 
@@ -53,6 +54,7 @@ final readonly class ArchitectureExtension implements Plugin
             new TransactionEffects($this->layout),
             new PublishedSignatures($this->layout),
             new AmbientState(),
+            new SharedServiceState(),
             new HiddenDependencies($this->layout),
         ]));
         $registry->registerAfterAnalysisHook(new ContractConsumers($this->layout));

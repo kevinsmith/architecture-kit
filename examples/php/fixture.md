@@ -45,7 +45,7 @@ The declared module graph is Billing → Access and Notifications → Billing. B
 - **Commit failure:** SQLite keeps the transaction open when `COMMIT` fails on a deferred constraint. The adapter rolls back explicitly, and an integration test verifies rollback and connection reuse.
 - **Concurrency:** Billing reads a snapshot and conditionally updates by identity, organization, status, and version. Every competing writer must preserve that protocol. A stale void returns `Denial::Conflict` and is not retried.
 - **Delivery:** invoice state and the event intent commit together. The dispatcher reads committed intents only, delivers at least once, and stops at the first failure, leaving later intents pending. There is no retry scheduler, quarantine, or worker lease.
-- **Lifetimes:** every service is `readonly` and holds no invocation state, so one `Runtime` can serve a long-lived worker. The suite interleaves invocations with Fibers at each step of the use case to show actors and scopes do not leak.
+- **Lifetimes:** every service is `readonly` and holds no invocation state, so one `Runtime` can serve a long-lived worker. The extension rejects writable properties and mutable containers in Application and Presentation, and the suite interleaves invocations with Fibers at each step of the use case to show actors and scopes do not leak.
 
 ## Evidence and remaining obligations
 

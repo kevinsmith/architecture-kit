@@ -173,6 +173,59 @@ final class ExtensionTest extends TestCase
                 public const string VOID_INVOICE = 'invoice:void';
             }
             PHP, ['external_consumers' => ['App\Billing\Contracts\Permissions' => 'Grant administration runs outside this codebase.']]];
+
+        yield 'use case holding a port and immutable configuration' => ['src/Billing/Application/Reminder.php', <<<'PHP'
+            namespace App\Billing\Application;
+
+            final class Reminder
+            {
+                /** @param list<string> $channels */
+                public function __construct(
+                    private readonly InvoiceStore $invoices,
+                    private readonly array $channels,
+                ) {}
+
+                public function due(string $id): bool
+                {
+                    return $this->channels !== [] && $this->invoices->load($id) !== null;
+                }
+            }
+            PHP];
+
+        yield 'shared state in an Infrastructure adapter' => ['src/Billing/Infrastructure/StatusCache.php', <<<'PHP'
+            namespace App\Billing\Infrastructure;
+
+            use ArrayObject;
+
+            final class StatusCache
+            {
+                private int $hits = 0;
+
+                /** @param ArrayObject<string, string> $statuses */
+                public function __construct(private readonly ArrayObject $statuses = new ArrayObject()) {}
+
+                public function remember(string $id, string $status): void
+                {
+                    $this->hits++;
+                    $this->statuses[$id] = $status;
+                }
+            }
+            PHP];
+
+        yield 'Domain entity mutating its own state' => ['src/Billing/Domain/Draft.php', <<<'PHP'
+            namespace App\Billing\Domain;
+
+            final class Draft
+            {
+                /** @var list<string> */
+                private array $lines = [];
+
+                public function add(string $line): void
+                {
+                    $this->lines[] = $line;
+                }
+            }
+            PHP];
     }
 
     /** @return iterable<string, array{string, string, string, string}> */
@@ -370,6 +423,60 @@ final class ExtensionTest extends TestCase
                 public static function next(): int
                 {
                     return ++self::$count;
+                }
+            }
+            PHP];
+
+        yield 'writable property in a use case' => ['writable-property', 'R07', 'src/Billing/Application/LastActor.php', <<<'PHP'
+            namespace App\Billing\Application;
+
+            final class LastActor
+            {
+                private string $actor = '';
+
+                public function handle(string $actor): string
+                {
+                    $previous = $this->actor;
+                    $this->actor = $actor;
+
+                    return $previous;
+                }
+            }
+            PHP];
+
+        yield 'mutable container in a readonly use case' => ['mutable-container', 'R07', 'src/Billing/Application/Scratch.php', <<<'PHP'
+            namespace App\Billing\Application;
+
+            use ArrayObject;
+
+            final readonly class Scratch
+            {
+                /** @param ArrayObject<string, string> $scratch */
+                public function __construct(private ArrayObject $scratch = new ArrayObject()) {}
+
+                public function handle(string $id): ?string
+                {
+                    $previous = $this->scratch['invoice'] ?? null;
+                    $this->scratch['invoice'] = $id;
+
+                    return $previous;
+                }
+            }
+            PHP];
+
+        yield 'mutable container in a docblock collection type' => ['mutable-container', 'R07', 'src/Notifications/Presentation/Inbox.php', <<<'PHP'
+            namespace App\Notifications\Presentation;
+
+            use SplQueue;
+
+            final readonly class Inbox
+            {
+                /** @param list<SplQueue<string>> $queues */
+                public function __construct(private array $queues) {}
+
+                public function count(): int
+                {
+                    return \count($this->queues);
                 }
             }
             PHP];
