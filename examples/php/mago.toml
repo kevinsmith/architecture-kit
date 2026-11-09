@@ -134,8 +134,9 @@ deny-from = ['**']
 reason = "R02: production code is independent of test-only code."
 
 # Storage stays in Infrastructure; the connection is constructed in composition (R02, R09).
+# List every database API the project can load: PDO, its driver subclasses, and SQLite3.
 [[guard.perimeter.restrictions]]
-dependency = 'PDO**'
+dependency = '{PDO**,Pdo\**,SQLite3**}'
 allow-from = ['App\*\Infrastructure\**', 'App\Bootstrap\**']
 reason = "R02: storage belongs to Infrastructure; composition constructs the connection."
 

@@ -64,6 +64,9 @@ FORBIDDEN = [
     ("storage outside Infrastructure", "guard", "R02", "src/Billing/Application/Query.php",
      PHP + "namespace App\\Billing\\Application;\n\nuse PDO;\n\n"
      "final readonly class Query\n{\n    public function __construct(private PDO $pdo) {}\n}\n"),
+    ("driver-specific storage outside Infrastructure", "guard", "R02", "src/Billing/Application/DirectVoid.php",
+     PHP + "namespace App\\Billing\\Application;\n\nuse Pdo\\Sqlite;\n\n"
+     "final readonly class DirectVoid\n{\n    public function __construct(private Sqlite $db) {}\n}\n"),
     ("driving adapter uses a driven adapter", "guard", "R02", "src/Notifications/Presentation/Shortcut.php",
      PHP + "namespace App\\Notifications\\Presentation;\n\nuse App\\Billing\\Infrastructure\\PdoInvoiceStore;\n\n"
      "final readonly class Shortcut\n{\n    public function __construct(private PdoInvoiceStore $store) {}\n}\n"),

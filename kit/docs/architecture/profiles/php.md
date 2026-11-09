@@ -18,7 +18,7 @@ Maps the [core](../rules.md) to PHP, validated on PHP 8.5 with PDO SQLite. Insta
 
 - Compose in `App\Bootstrap`, by hand or with a container that only composition sees. Business code never receives `Psr\Container\ContainerInterface` or the composition root (R06).
 - Entry scripts in the global namespace, such as `public/index.php` or a worker script, call composition and nothing else.
-- Construct `PDO` in composition and pass it to Infrastructure constructors. `PDO` and `PDOStatement` never appear in other roles.
+- Construct `PDO` in composition and pass it to Infrastructure constructors. `PDO`, its driver subclasses such as `Pdo\Sqlite`, `SQLite3`, and any other database API never appear in other roles.
 - Shared services hold no invocation state. Long-lived runtimes, such as FrankenPHP or RoadRunner workers, queue consumers, or Fibers, reuse one instance across invocations, so a per-request assumption that holds under PHP-FPM becomes a leak (R07). Pass the authenticated actor to the use case explicitly; never read `$_SESSION` or another superglobal from a shared service.
 - A `PDO` connection supports one transaction at a time. Code that interleaves invocations on one connection, such as Fibers, must not suspend inside a transaction, or the invocations share it.
 

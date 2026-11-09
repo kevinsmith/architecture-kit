@@ -33,7 +33,7 @@ Every rule's `reason` names the core rule it implements, so each diagnostic carr
 - **Restrictions.** `[[guard.perimeter.restrictions]]` run before permits, so no permit can override them:
   - Declared module graph (R03): in dependency order, deny each module from the modules before it.
   - Composition (R06): `App\Bootstrap\**` and `Psr\Container\**` are allowed only from Bootstrap; global entry scripts may also reach Bootstrap. A `@global` perimeter rule permits entry scripts only Bootstrap and built-ins.
-  - Storage (R02): `PDO**` is allowed only from Infrastructure and Bootstrap.
+  - Storage (R02): every database API the project can load is allowed only from Infrastructure and Bootstrap. The pattern names APIs, not the capability, so list each one, such as `{PDO**,Pdo\**,SQLite3**}` for PDO, its driver subclasses like `Pdo\Sqlite`, and the `sqlite3` extension, plus `mysqli`, `pg_*`, or vendor clients the project installs.
   - Tests (R02): `Tests\**` is denied from all production code.
 - **Published values (R05).** A structural rule makes classes in `App\*\Contracts\**` `final` and `readonly`.
 - **Schemas (R10).** `[analyzer] check-missing-type-hints = true` and `minimum-fail-level = "warning"` make untyped parameters, properties, and returns fail, and `imprecise-type` reject a bare `array` or `iterable`.
@@ -74,7 +74,7 @@ Checks, each with permitted and forbidden fixtures in the extension's tests. Mag
 | R05 | Contract dependencies limited to contracts and pure built-ins; published classes `final readonly`; published signatures, including docblock and collection types, free of unpublished types; a consumer outside the owner | Consumers outside the analyzed code, recorded as reviewed exemptions |
 | R06 | Nothing but entry scripts depends on composition; only composition sees a container; request and process input only in driving adapters and composition; file inclusion only in composition; static state in composition | Initialization through framework hooks or Composer `files` autoloading |
 | R07 | Static properties, static variables, and globals in shared services | Mutable instance fields in services shared across invocations |
-| R09 | `PDO` only in Infrastructure; tables named in SQL strings checked against declared datasets, with computed table names rejected | SQL built by query builders or ORMs, unusual syntax, storage permissions; cache keys, files, and queues |
+| R09 | Listed database APIs only in Infrastructure; tables named in SQL strings checked against declared datasets, with computed table names rejected | Database APIs the restriction does not list; SQL built by query builders or ORMs, unusual syntax, storage permissions; cache keys, files, and queues |
 | R10 | Missing and imprecise types in published signatures; `mixed`, `object`, and `stdClass` anywhere in them | Runtime validation, docblock types that disagree with runtime values, and retained-payload compatibility |
 | R13 | Configured effects inside inline closures passed to configured transaction methods; transaction work defined elsewhere | Effects reached through methods the closure calls, unlisted effects, commit and rollback semantics, delivery policy |
 | R16 | Guard and analyzer baseline entries by file, issue code, and message naming the dependency or table, with occurrence counts; expansion, substitution, and stale entries fail with `--fail-on-out-of-sync-baseline` | The declaring symbol is not part of the identity, so a moved violation within one file keeps its entry |
