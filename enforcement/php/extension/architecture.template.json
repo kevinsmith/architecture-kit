@@ -1,0 +1,10 @@
+{
+  "root": "<root namespace>",
+  "modules": [],
+  "shared": "<Shared Infrastructure namespace>",
+  "composition": "<composition namespace>",
+  "datasets": {},
+  "transaction_methods": [],
+  "external_effects": ["mail", "curl_exec", "curl_multi_exec", "fsockopen", "stream_socket_client"],
+  "external_consumers": {}
+}

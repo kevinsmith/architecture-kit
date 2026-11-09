@@ -6,3 +6,5 @@ coverage.out
 /enforcement/go/golangci-lint-archcheck
 /examples/php/vendor/
 /examples/php/.phpunit.cache/
+/enforcement/php/extension/vendor/
+/enforcement/php/extension/.phpunit.cache/

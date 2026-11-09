@@ -160,24 +160,35 @@ reject "$BASE/architecture-tool/golangci-lint-archcheck" run --enable-only=archc
 """
 
 
-# The checkout is mounted read-only. The container works on a copy whose vendor/
-# is a named volume, so a host vendor/ with other platforms' binaries is never used.
+# The checkout is mounted read-only. The container works on a copy that keeps the
+# example's relative path to the extension. Each vendor/ is a named volume, so a host
+# vendor/ with other platforms' binaries is never used.
 PHP_CHECKS = """
-tar -C /workspace/examples/php --exclude=./vendor --exclude=./.phpunit.cache -cf - . | tar -C /app -xf -
-cd /app
+copy() { mkdir -p "/work/$1" && tar -C "/workspace/$1" --exclude=./vendor --exclude=./.phpunit.cache -cf - . | tar -C "/work/$1" -xf -; }
+copy enforcement/php
+copy examples/php
+cd /work/enforcement/php/extension
+composer validate --no-check-publish
+composer install --no-interaction --no-progress
+vendor/bin/mago analyze
+vendor/bin/phpunit
+cd /work/examples/php
 composer validate --strict --no-check-publish
 composer install --no-interaction --no-progress
 vendor/bin/mago guard
 vendor/bin/mago analyze
 vendor/bin/phpunit
-python3 /workspace/enforcement/php/fixtures.py .
+python3 /work/enforcement/php/fixtures.py .
 """
+
+PHP_ENV = ["COMPOSER_CACHE_DIR=/tmp/composer", "GITHUB_TOKEN"]
 
 
 def php_checks():
-    docker(PHP_IMAGE, {"architecture-kit-php-vendor": "/app/vendor", "architecture-kit-composer-cache": "/tmp/composer"},
-           {f"{ROOT}": "/workspace:ro"}, "/workspace", PHP_CHECKS, shell="sh",
-           env=["COMPOSER_CACHE_DIR=/tmp/composer", "GITHUB_TOKEN"])
+    volumes = {"architecture-kit-php-vendor": "/work/examples/php/vendor",
+               "architecture-kit-php-extension-vendor": "/work/enforcement/php/extension/vendor",
+               "architecture-kit-composer-cache": "/tmp/composer"}
+    docker(PHP_IMAGE, volumes, {f"{ROOT}": "/workspace:ro"}, "/workspace", PHP_CHECKS, shell="sh", env=PHP_ENV)
 
 
 def golangci_version():

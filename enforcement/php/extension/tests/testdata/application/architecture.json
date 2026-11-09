@@ -1,0 +1,13 @@
+{
+  "root": "App",
+  "modules": ["Access", "Billing", "Notifications"],
+  "shared": "Platform",
+  "composition": "Bootstrap",
+  "datasets": {
+    "Access": ["access_grants"],
+    "Billing": ["billing_invoices", "billing_outbox"]
+  },
+  "transaction_methods": ["App\\Billing\\Application\\InvoiceStore::run"],
+  "external_effects": ["App\\Billing\\Contracts\\InvoiceVoidedSubscriber", "App\\Notifications\\Application\\Mailer", "mail"],
+  "external_consumers": {}
+}

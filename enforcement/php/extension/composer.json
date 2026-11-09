@@ -1,0 +1,24 @@
+{
+    "name": "example/architecture-check",
+    "description": "Mago analyzer extension for the architecture kit's rules that Mago's guard cannot express.",
+    "type": "library",
+    "version": "1.0.0",
+    "license": "Apache-2.0",
+    "require": {
+        "php": "~8.5.0",
+        "carthage-software/mago": "~1.59.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "13.4.6"
+    },
+    "autoload": {
+        "psr-4": {"ArchitectureCheck\\": "src/"}
+    },
+    "autoload-dev": {
+        "psr-4": {"ArchitectureCheck\\Tests\\": "tests/"}
+    },
+    "bin": ["bin/architecture-worker"],
+    "config": {
+        "sort-packages": true
+    }
+}

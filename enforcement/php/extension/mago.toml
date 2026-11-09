@@ -1,0 +1,12 @@
+# Analyzes the extension's own source. The checks it implements run in the application.
+php-version = "8.5"
+
+[source]
+paths = ["src", "bin", "tests"]
+includes = ["vendor"]
+excludes = ["tests/testdata"]
+
+[analyzer]
+check-missing-type-hints = true
+check-missing-override = true
+minimum-fail-level = "warning"

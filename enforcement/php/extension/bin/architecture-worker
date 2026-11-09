@@ -1,0 +1,25 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// Mago extension worker for the architecture checks. Register it in the application's
+// mago.toml as `command = ["php", "vendor/bin/architecture-worker"]`. Mago starts it in the
+// configuration's directory, where it reads `architecture.json`, or the path given as the
+// first argument. Standard output carries Mago's worker protocol, so diagnostics go to
+// standard error.
+
+use ArchitectureCheck\ArchitectureExtension;
+use ArchitectureCheck\Layout;
+use Mago\Sdk\Worker;
+
+require $GLOBALS['_composer_autoload_path'] ?? dirname(__DIR__) . '/vendor/autoload.php';
+
+try {
+    $layout = Layout::fromFile($argv[1] ?? 'architecture.json');
+} catch (InvalidArgumentException $error) {
+    fwrite(STDERR, "architecture-check: {$error->getMessage()}\n");
+    exit(1);
+}
+
+new Worker(ArchitectureExtension::create($layout))->run();
