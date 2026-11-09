@@ -37,7 +37,7 @@ Decode untrusted representations with `json_decode($json, false, $depth, JSON_TH
 
 ## Verification — R17
 
-Use Mago's guard for dependency and structural rules and its analyzer for types, with the analyzer failing on warnings so that untyped arrays (`imprecise-type`) fail. The reference configuration and its coverage are in [PHP enforcement](../php-enforcement.md).
+Use Mago's guard for dependency and structural rules and its analyzer for types, with the analyzer failing on warnings so that untyped arrays (`imprecise-type`) fail. Run the supplied analyzer extension for what the guard cannot see, such as table names in SQL strings, effects inside transaction closures, docblock types in published signatures, and ambient state. The reference configuration and its coverage are in [PHP enforcement](../php-enforcement.md).
 
 Test transactions, rollback, commit failure, outbox visibility, and conditional writes against the real database. PHP has no race detector; interleave invocations deterministically, for example by suspending a Fiber between a use case's read and its write, and run competing writers through separate connections.
 

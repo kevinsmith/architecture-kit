@@ -4,6 +4,11 @@ php-version = "8.5"
 paths = ["src"]
 includes = ["vendor"]
 
+# The kit's architecture extension checks what the guard cannot express and reports
+# through the analyzer. It reads this application's mapping from architecture.json.
+[extension-hosts.architecture]
+command = ["php", "vendor/bin/architecture-worker"]
+
 [analyzer]
 check-missing-type-hints = true
 check-missing-override = true

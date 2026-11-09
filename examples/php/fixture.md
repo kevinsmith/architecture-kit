@@ -31,6 +31,8 @@ Each module's storage adapter creates its own tables with `CREATE TABLE IF NOT E
 - `App\Platform`: one shared system clock behind PSR-20, supplied to Application, never Domain.
 - `App\Bootstrap`: explicit composition. `Runtime` exposes use cases, the dispatcher, and the message input, never adapters or the connection.
 
+The analyzer runs the kit's [architecture extension](../../enforcement/php/development.md), installed from `enforcement/php/extension` through a Composer path repository, for the checks the guard cannot express. [`architecture.json`](architecture.json) gives it the module datasets, the transaction method, the external effects, and one reviewed exemption: `Permissions` has no consumer in this code because grant administration lives outside the application.
+
 The declared module graph is Billing → Access and Notifications → Billing. Billing calls Access's published `Authorizer`. Notifications implements Billing's published `InvoiceVoidedSubscriber`, because a PHP class must name the interface it implements; Billing never names Notifications.
 
 ## Execution contract
@@ -59,4 +61,4 @@ The declared module graph is Billing → Access and Notifications → Billing. B
 | V09 | Twelve invocations of one shared use case with different actors and scopes, Fiber-interleaved after the read, before authorization, before the clock read, and before the transaction |
 | V11 | Typed recipient list, delivery through the message input, and rejection there of missing, malformed, unknown, oversized, and trailing data and of an object in place of a list |
 
-The guard fixtures cover the structural pairs in the scenario. PHP has no context cancellation, so V05 has no cancellation case. Fibers run in one process and show deterministic interleaving, not parallel execution; cross-process races rely on SQLite's locking and the conditional write. R09 table ownership and R13 transaction effects are review obligations here: the guard cannot read SQL or follow callables. Reporting (R15), authentication, nested transactions, contract evolution, and other database engines are outside this fixture's validated scope.
+The guard and extension fixtures cover the structural pairs in the scenario. PHP has no context cancellation, so V05 has no cancellation case. Fibers run in one process and show deterministic interleaving, not parallel execution; cross-process races rely on SQLite's locking and the conditional write. The extension checks R09 table ownership in SQL strings and R13 effects inside transaction closures; effects reached through methods a closure calls remain review obligations. Reporting (R15), authentication, nested transactions, contract evolution, and other database engines are outside this fixture's validated scope.

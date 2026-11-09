@@ -70,15 +70,26 @@ FORBIDDEN = [
     ("production code uses test code", "guard", "R02", "src/Bootstrap/TestWiring.php",
      PHP + "namespace App\\Bootstrap;\n\nuse Tests\\Support\\Mailbox;\n\n"
      "final readonly class TestWiring\n{\n    public function __construct(private Mailbox $mailbox) {}\n}\n"),
+    # The architecture extension's own tests cover its checks; this case shows the
+    # application's mago.toml and architecture.json run it.
+    ("another module's table", "analyze", "architecture/table-ownership", "src/Billing/Infrastructure/GrantQuery.php",
+     PHP + "namespace App\\Billing\\Infrastructure;\n\nfinal readonly class GrantQuery\n{\n"
+     "    public const string SQL = 'SELECT actor FROM access_grants WHERE actor = ?';\n}\n"),
 ]
 
-BASELINE_VIOLATION = (
-    "src/Billing/Domain/Legacy.php",
-    PHP + "namespace App\\Billing\\Domain;\n\nfinal readonly class Legacy\n{\n"
-    "    public function a(): int\n    {\n        return \\time();\n    }\n{extra}}\n",
-)
-EXTRA_SAME = "\n    public function b(): int\n    {\n        return \\time();\n    }\n"
-EXTRA_OTHER = "\n    public function b(): int\n    {\n        return \\mt_rand();\n    }\n"
+# (tool, file, template, a second identical violation, a different violation)
+BASELINES = [
+    ("guard", "src/Billing/Domain/Legacy.php",
+     PHP + "namespace App\\Billing\\Domain;\n\nfinal readonly class Legacy\n{\n"
+     "    public function a(): int\n    {\n        return \\time();\n    }\n{extra}}\n",
+     "\n    public function b(): int\n    {\n        return \\time();\n    }\n",
+     "\n    public function b(): int\n    {\n        return \\mt_rand();\n    }\n"),
+    ("analyze", "src/Billing/Infrastructure/LegacyReport.php",
+     PHP + "namespace App\\Billing\\Infrastructure;\n\nfinal readonly class LegacyReport\n{\n"
+     "    public const string A = 'SELECT actor FROM access_grants';\n{extra}}\n",
+     "    public const string B = 'SELECT actor FROM access_grants WHERE actor = ?';\n",
+     "    public const string B = 'SELECT actor FROM billing_invoices JOIN access_audit ON 1';\n"),
+]
 
 
 def mago(root, *arguments):
@@ -114,23 +125,22 @@ def expect_failure(root, tool, expected, path, label):
                            f"{json.dumps(issues, indent=1)[:2000]}")
 
 
-def baseline(root):
-    path, template = BASELINE_VIOLATION
-    source, baseline_file = root / path, root / "guard-baseline.toml"
-    common = ["guard", "--baseline", str(baseline_file)]
+def baseline(root, tool, path, template, same, other):
+    source, baseline_file = root / path, root / f"{tool}-baseline.toml"
+    common = [tool, "--baseline", str(baseline_file)]
     source.write_text(template.replace("{extra}", ""))
     subprocess.run([str(root / "vendor/bin/mago"), *common, "--generate-baseline"],
                    cwd=root, capture_output=True, check=True)
     strict = [*common, "--fail-on-out-of-sync-baseline"]
     if mago(root, *strict)[0] != 0:
-        raise RuntimeError("baseline: an unchanged baselined violation failed")
-    for label, extra in (("expanded", EXTRA_SAME), ("substituted", EXTRA_OTHER)):
+        raise RuntimeError(f"{tool} baseline: an unchanged baselined violation failed")
+    for label, extra in (("expanded", same), ("substituted", other)):
         source.write_text(template.replace("{extra}", extra))
         if mago(root, *strict)[0] == 0:
-            raise RuntimeError(f"baseline: an {label} violation was accepted")
+            raise RuntimeError(f"{tool} baseline: an {label} violation was accepted")
     source.unlink()
     if mago(root, *strict)[0] == 0:
-        raise RuntimeError("baseline: a stale entry was accepted")
+        raise RuntimeError(f"{tool} baseline: a stale entry was accepted")
     baseline_file.unlink()
 
 
@@ -142,7 +152,7 @@ def main():
         raise RuntimeError(f"{application}: run composer install first")
     with tempfile.TemporaryDirectory(prefix="php-architecture-fixtures-") as temporary:
         root = Path(temporary)
-        for name in ("mago.toml", "composer.json", "composer.lock"):
+        for name in ("mago.toml", "architecture.json", "composer.json", "composer.lock"):
             shutil.copy(application / name, root / name)
         shutil.copytree(application / "src", root / "src")
         (root / "vendor").symlink_to(application / "vendor")
@@ -158,9 +168,10 @@ def main():
             target.write_text(source)
             expect_failure(root, tool, expected, path, label)
             target.unlink()
-        baseline(root)
-    print(f"PHP fixtures passed: {len(PERMITTED)} permitted, {len(FORBIDDEN)} forbidden, "
-          "and baseline identity, expansion, substitution, and stale-entry checks.", flush=True)
+        for case in BASELINES:
+            baseline(root, *case)
+    print(f"PHP fixtures passed: {len(PERMITTED)} permitted, {len(FORBIDDEN)} forbidden, and guard and "
+          "analyzer baseline identity, expansion, substitution, and stale-entry checks.", flush=True)
 
 
 if __name__ == "__main__":

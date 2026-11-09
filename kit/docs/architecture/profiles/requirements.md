@@ -7,7 +7,7 @@ Profiles map the [core rules](../rules.md) to idiomatic implementations. They ar
 | Profile | Validation status |
 |---|---|
 | [Go](go.md) | Executable scenario and partial checker |
-| [PHP](php.md) | Executable scenario and partial checks through Mago configuration |
+| [PHP](php.md) | Executable scenario and partial checks through Mago configuration and an analyzer extension |
 
 ## Profile requirements
 

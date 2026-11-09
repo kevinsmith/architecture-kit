@@ -1,0 +1,34 @@
+{
+  "root": "App",
+  "modules": [
+    "Access",
+    "Billing",
+    "Notifications"
+  ],
+  "shared": "Platform",
+  "composition": "Bootstrap",
+  "datasets": {
+    "Access": [
+      "access_grants"
+    ],
+    "Billing": [
+      "billing_invoices",
+      "billing_outbox"
+    ]
+  },
+  "transaction_methods": [
+    "App\\Billing\\Application\\InvoiceStore::run"
+  ],
+  "external_effects": [
+    "mail",
+    "curl_exec",
+    "curl_multi_exec",
+    "fsockopen",
+    "stream_socket_client",
+    "App\\Billing\\Contracts\\InvoiceVoidedSubscriber",
+    "App\\Notifications\\Application\\Mailer"
+  ],
+  "external_consumers": {
+    "App\\Billing\\Contracts\\Permissions": "Grant administration, outside this application, names the permissions Billing checks."
+  }
+}

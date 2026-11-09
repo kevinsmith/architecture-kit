@@ -10,8 +10,12 @@
     },
     "require-dev": {
         "carthage-software/mago": "1.59.0",
+        "example/architecture-check": "1.0.0",
         "phpunit/phpunit": "13.4.6"
     },
+    "repositories": [
+        {"type": "path", "url": "../../enforcement/php/extension"}
+    ],
     "autoload": {
         "psr-4": {"App\\": "src/"}
     },

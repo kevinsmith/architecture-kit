@@ -181,6 +181,17 @@ vendor/bin/phpunit
 python3 /work/enforcement/php/fixtures.py .
 """
 
+# The installed extension must accept the reference and reject another module's table.
+PHP_SMOKE_TEST = """
+cd /adoption/application
+composer update example/architecture-check --no-interaction --no-progress
+vendor/bin/mago guard
+vendor/bin/mago analyze
+cp /adoption/GrantQuery.php src/Billing/Infrastructure/
+if vendor/bin/mago analyze > /adoption/result 2>&1; then echo "accepted another module's table"; exit 1; fi
+grep -q "architecture/table-ownership" /adoption/result && grep -q "R09" /adoption/result || { cat /adoption/result; exit 1; }
+"""
+
 PHP_ENV = ["COMPOSER_CACHE_DIR=/tmp/composer", "GITHUB_TOKEN"]
 
 
@@ -189,6 +200,40 @@ def php_checks():
                "architecture-kit-php-extension-vendor": "/work/enforcement/php/extension/vendor",
                "architecture-kit-composer-cache": "/tmp/composer"}
     docker(PHP_IMAGE, volumes, {f"{ROOT}": "/workspace:ro"}, "/workspace", PHP_CHECKS, shell="sh", env=PHP_ENV)
+
+
+def prepare_php_installation(base):
+    # Install as adopters do: the extension in the application's tooling directory, a
+    # path repository, and a mapping that starts from the reviewed template.
+    app = base / "application"
+    shutil.copytree(ROOT / "examples/php", app,
+                    ignore=shutil.ignore_patterns("vendor", ".phpunit.cache", "fixture.md", ".DS_Store"))
+    shutil.copytree(ROOT / "enforcement/php/extension", app / "tools/architecture-check",
+                    ignore=shutil.ignore_patterns("vendor", ".phpunit.cache", ".DS_Store"))
+    composer = json.loads((app / "composer.json").read_text())
+    composer["repositories"] = [{"type": "path", "url": "tools/architecture-check"}]
+    (app / "composer.json").write_text(json.dumps(composer, indent=4) + "\n")
+    config = json.loads((ROOT / "enforcement/php/extension/architecture.template.json").read_text())
+    config.update(json.loads((ROOT / "examples/php/architecture.json").read_text()))
+    (app / "architecture.json").write_text(json.dumps(config, indent=2) + "\n")
+    (app / "vendor").mkdir()
+    (base / "GrantQuery.php").write_text(
+        "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\\Billing\\Infrastructure;\n\n"
+        "final readonly class GrantQuery\n{\n    public const string SQL = 'SELECT actor FROM access_grants';\n}\n")
+
+
+def php_installation():
+    with tempfile.TemporaryDirectory(prefix="architecture-php-adoption-") as temporary:
+        base = Path(temporary)
+        prepare_php_installation(base)
+        # Return the container's root-owned files, except the vendor volume, so the host can remove them.
+        owner = (f"trap 'find /adoption -path /adoption/application/vendor -prune -o "
+                 f"-exec chown {os.getuid()}:{os.getgid()} {{}} +' EXIT\n")
+        volumes = {"architecture-kit-php-adoption-vendor": "/adoption/application/vendor",
+                   "architecture-kit-composer-cache": "/tmp/composer"}
+        docker(PHP_IMAGE, volumes, {base: "/adoption"}, "/adoption", owner + PHP_SMOKE_TEST, shell="sh", env=PHP_ENV)
+        print("PHP copy/install smoke test passed for the architecture extension, including an intended R09 rejection.",
+              flush=True)
 
 
 def golangci_version():
@@ -265,6 +310,7 @@ def main():
     go_checks()
     installation()
     php_checks()
+    php_installation()
     print("All verification passed.")
 
 
