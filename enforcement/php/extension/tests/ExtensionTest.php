@@ -212,6 +212,53 @@ final class ExtensionTest extends TestCase
             }
             PHP];
 
+        yield 'Domain interface implemented in Domain, and a pure closure inside a Domain body' => ['src/Billing/Domain/Policies.php', <<<'PHP'
+            namespace App\Billing\Domain;
+
+            interface Policy
+            {
+                public function allows(int $amount): bool;
+            }
+
+            final readonly class Ceiling implements Policy
+            {
+                /** @param list<int> $amounts */
+                public function __construct(private array $amounts) {}
+
+                #[\Override]
+                public function allows(int $amount): bool
+                {
+                    $rounded = $this->rounded(static fn(int $value): int => \intdiv($value, 100) * 100, $amount);
+
+                    return \array_filter($this->amounts, static fn(int $limit): bool => $rounded <= $limit) !== [];
+                }
+
+                /** @param \Closure(int): int $round */
+                private function rounded(\Closure $round, int $amount): int
+                {
+                    return $round($amount);
+                }
+            }
+            PHP];
+
+        yield 'callable and iterable outside pure roles' => ['src/Billing/Application/Batch.php', <<<'PHP'
+            namespace App\Billing\Application;
+
+            final readonly class Batch
+            {
+                /**
+                 * @param iterable<string> $ids
+                 * @param \Closure(string): void $each
+                 */
+                public static function run(iterable $ids, \Closure $each): void
+                {
+                    foreach ($ids as $id) {
+                        $each($id);
+                    }
+                }
+            }
+            PHP];
+
         yield 'Domain entity mutating its own state' => ['src/Billing/Domain/Draft.php', <<<'PHP'
             namespace App\Billing\Domain;
 
@@ -424,6 +471,137 @@ final class ExtensionTest extends TestCase
                 {
                     return ++self::$count;
                 }
+            }
+            PHP];
+
+        yield 'output in Domain' => ['effect-construct', 'R04', 'src/Billing/Domain/Loud.php', <<<'PHP'
+            namespace App\Billing\Domain;
+
+            final readonly class Loud
+            {
+                public static function decide(int $amount): int
+                {
+                    echo $amount;
+                    print 'decided';
+
+                    return $amount;
+                }
+            }
+            PHP];
+
+        yield 'process exit in Domain' => ['effect-construct', 'R04', 'src/Billing/Domain/Quitter.php', <<<'PHP'
+            namespace App\Billing\Domain;
+
+            final readonly class Quitter
+            {
+                public static function check(int $amount): int
+                {
+                    if ($amount < 0) {
+                        exit('negative');
+                    }
+
+                    return $amount;
+                }
+            }
+            PHP];
+
+        yield 'shell command in a published contract' => ['effect-construct', 'R05', 'src/Billing/Contracts/Host.php', <<<'PHP'
+            namespace App\Billing\Contracts;
+
+            final readonly class Host
+            {
+                public static function name(): string
+                {
+                    return (string) `hostname`;
+                }
+            }
+            PHP];
+
+        yield 'Domain interface implemented in Infrastructure' => ['domain-implementation', 'R04', 'src/Billing/Infrastructure/HttpRates.php', <<<'PHP'
+            namespace App\Billing\Domain {
+                interface Rates
+                {
+                    public function rate(string $currency): float;
+                }
+            }
+
+            namespace App\Billing\Infrastructure {
+                final readonly class HttpRates implements \App\Billing\Domain\Rates
+                {
+                    #[\Override]
+                    public function rate(string $currency): float
+                    {
+                        return (float) \file_get_contents('https://rates.example/' . $currency);
+                    }
+                }
+            }
+            PHP];
+
+        yield 'Domain interface implemented by an anonymous class in Application' => ['domain-implementation', 'R04', 'src/Billing/Application/Rates.php', <<<'PHP'
+            namespace App\Billing\Domain {
+                interface Discount
+                {
+                    public function percent(): int;
+                }
+            }
+
+            namespace App\Billing\Application {
+                final readonly class Rates
+                {
+                    public static function discount(int $percent): \App\Billing\Domain\Discount
+                    {
+                        return new class ($percent) implements \App\Billing\Domain\Discount {
+                            public function __construct(private int $value) {}
+
+                            #[\Override]
+                            public function percent(): int
+                            {
+                                return $this->value;
+                            }
+                        };
+                    }
+                }
+            }
+            PHP];
+
+        yield 'callable passed into Domain' => ['deferred-behavior', 'R04', 'src/Billing/Domain/Callback.php', <<<'PHP'
+            namespace App\Billing\Domain;
+
+            final readonly class Callback
+            {
+                /** @param callable(int): int $rate */
+                public static function apply(callable $rate, int $amount): int
+                {
+                    return $rate($amount);
+                }
+            }
+            PHP];
+
+        yield 'lazy iterable passed into Domain' => ['deferred-behavior', 'R04', 'src/Billing/Domain/Lines.php', <<<'PHP'
+            namespace App\Billing\Domain;
+
+            final readonly class Lines
+            {
+                /** @param iterable<int, int> $lines */
+                public static function total(iterable $lines): int
+                {
+                    $total = 0;
+                    foreach ($lines as $line) {
+                        $total += $line;
+                    }
+
+                    return $total;
+                }
+            }
+            PHP];
+
+        yield 'generator returned from a published contract' => ['deferred-behavior', 'R05', 'src/Billing/Contracts/InvoiceFeed.php', <<<'PHP'
+            namespace App\Billing\Contracts;
+
+            interface InvoiceFeed
+            {
+                /** @return \Generator<int, string> */
+                public function ids(): \Generator;
             }
             PHP];
 

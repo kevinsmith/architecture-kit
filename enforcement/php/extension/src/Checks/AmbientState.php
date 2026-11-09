@@ -19,12 +19,14 @@ use function str_contains;
 use function strcasecmp;
 use function strtolower;
 use function strtotime;
+use function trim;
 
 /**
  * State and inputs that reach code without passing through its parameters, which the guard
  * cannot see because no symbol names them: the clock read through approved date classes
- * (R04, R05), static and global state (R04–R07), superglobals and process configuration
- * (R06), file inclusion (R06), and `eval` (R02).
+ * and output, exit, and shell constructs in pure roles (R04, R05), static and global state
+ * (R04–R07), superglobals and process configuration (R06), file inclusion (R06), and
+ * `eval` (R02).
  */
 final readonly class AmbientState implements Check
 {
@@ -39,6 +41,7 @@ final readonly class AmbientState implements Check
     {
         if ($place->role->isPure()) {
             $this->clock($code, $place, $namespace, $report);
+            $this->constructs($code, $place, $namespace, $report);
         }
         $this->state($code, $place, $namespace, $report);
         $this->inputs($code, $place, $namespace, $report);
@@ -91,6 +94,30 @@ final readonly class AmbientState implements Check
             if ($reads) {
                 $report->error($node, 'ambient-clock', $rule, "`{$class}` reads the current time.", $reason, 'Pass the time in as a parameter.');
             }
+        }
+    }
+
+    /** Output, process exit, and shell commands are language constructs, so the guard sees no symbol. */
+    private function constructs(Code $code, Place $place, Node $namespace, Report $report): void
+    {
+        $rule = $place->role === Role::Domain ? 'R04' : 'R05';
+        $reason = $place->role === Role::Domain
+            ? 'Domain is free of I/O; Application performs effects through contracts.'
+            : 'published contracts contain only agreements, data, and pure behavior.';
+        $kinds = [
+            NodeKind::Echo->value => '`echo` writes output',
+            NodeKind::EchoTag->value => '`<?=` writes output',
+            NodeKind::Inline->value => 'Inline text outside `<?php` writes output',
+            NodeKind::PrintConstruct->value => '`print` writes output',
+            NodeKind::ExitConstruct->value => '`exit` ends the process',
+            NodeKind::DieConstruct->value => '`die` ends the process',
+            NodeKind::ShellExecuteString->value => 'A backtick string runs a shell command',
+        ];
+        foreach ($code->within($namespace, NodeKind::Echo, NodeKind::EchoTag, NodeKind::Inline, NodeKind::PrintConstruct, NodeKind::ExitConstruct, NodeKind::DieConstruct, NodeKind::ShellExecuteString) as $node) {
+            if ($node->kind === NodeKind::Inline && trim($code->text($node)) === '') {
+                continue;
+            }
+            $report->error($node, 'effect-construct', $rule, "{$kinds[$node->kind->value]}.", $reason, 'Return a value, and let Application or a driving adapter perform the effect.');
         }
     }
 

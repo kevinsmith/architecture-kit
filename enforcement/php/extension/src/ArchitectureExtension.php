@@ -11,6 +11,7 @@ use Mago\Sdk\Extension;
 use Override;
 use ArchitectureCheck\Checks\AmbientState;
 use ArchitectureCheck\Checks\HiddenDependencies;
+use ArchitectureCheck\Checks\InjectedBehavior;
 use ArchitectureCheck\Checks\PublishedSignatures;
 use ArchitectureCheck\Checks\SharedServiceState;
 use ArchitectureCheck\Checks\TableOwnership;
@@ -55,6 +56,7 @@ final readonly class ArchitectureExtension implements Plugin
             new PublishedSignatures($this->layout),
             new AmbientState(),
             new SharedServiceState(),
+            new InjectedBehavior($this->layout),
             new HiddenDependencies($this->layout),
         ]));
         $registry->registerAfterAnalysisHook(new ContractConsumers($this->layout));
